@@ -1,0 +1,1787 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TestRail BDD Generator</title>
+  <link rel="icon" type="image/png" href="/static/favicon.png" />
+  <style>
+    /* ── Variables de tema ────────────────────────────────────── */
+    :root {
+      --bg:          #f0f2f5;
+      --card-bg:     #ffffff;
+      --text:        #1a1a2e;
+      --text-muted:  #666;
+      --border:      #dde1ea;
+      --input-bg:    #fafbfc;
+      --input-focus: #fff;
+      --step-bg:     #f8f9fc;
+      --step-border: #e6e9f0;
+      --tc-bg:       #f4f6fc;
+      --tc-border:   #e0e4ee;
+      --field-bg:    #f8f9fc;
+      --field-border:#e6e9f0;
+      --accent:      #0f3460;
+      --accent-light:#eef2f9;
+      --tab-border:  #dde1ea;
+      --err-bg:      #fdecea;
+      --err-border:  #f5c2be;
+      --err-text:    #b91c1c;
+    }
+    body.dark {
+      --bg:          #0d1117;
+      --card-bg:     #161b22;
+      --text:        #e6edf3;
+      --text-muted:  #8b949e;
+      --border:      #30363d;
+      --input-bg:    #0d1117;
+      --input-focus: #161b22;
+      --step-bg:     #0d1117;
+      --step-border: #30363d;
+      --tc-bg:       #1c2128;
+      --tc-border:   #30363d;
+      --field-bg:    #0d1117;
+      --field-border:#30363d;
+      --accent:      #4fc3f7;
+      --accent-light:#112240;
+      --tab-border:  #30363d;
+      --err-bg:      #2d1515;
+      --err-border:  #6e2020;
+      --err-text:    #f87171;
+    }
+
+    /* ── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background .3s, color .3s;
+    }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      color: #fff;
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,.3);
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: .3px; }
+    header p  { font-size: .8rem; opacity: .7; margin-top: 2px; }
+
+    /* ── Main layout ─────────────────────────────────────────── */
+    main {
+      max-width: 1100px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    /* ── Tabs ────────────────────────────────────────────────── */
+    .tabs {
+      display: flex;
+      gap: .5rem;
+      border-bottom: 2px solid var(--tab-border);
+    }
+    .tab-btn {
+      padding: .65rem 1.4rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: color .2s, border-color .2s;
+      border-radius: 6px 6px 0 0;
+    }
+    .tab-btn:hover { color: var(--accent); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    .tab-icon { margin-right: .4rem; }
+
+    /* ── Cards ───────────────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 1px 8px rgba(0,0,0,.08);
+      padding: 1.75rem;
+      transition: background .3s;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    /* ── Form elements ───────────────────────────────────────── */
+    .form-group { margin-bottom: 1.1rem; }
+    label {
+      display: block;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .35rem;
+    }
+    label .hint {
+      font-weight: 400;
+      color: var(--text-muted);
+      font-size: .78rem;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      padding: .65rem .85rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .875rem;
+      font-family: inherit;
+      color: var(--text);
+      transition: border-color .2s, box-shadow .2s, background .3s;
+      resize: vertical;
+      background: var(--input-bg);
+    }
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,195,247,.12);
+      background: var(--input-focus);
+    }
+    textarea { min-height: 100px; }
+
+    /* ── Steps builder ───────────────────────────────────────── */
+    #steps-container { display: flex; flex-direction: column; gap: .75rem; }
+
+    .step-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: .6rem;
+      align-items: start;
+      background: var(--step-bg);
+      border: 1px solid var(--step-border);
+      border-radius: 8px;
+      padding: .75rem;
+      position: relative;
+    }
+    .step-row-num {
+      position: absolute;
+      top: .55rem;
+      left: .75rem;
+      font-size: .7rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-light);
+      border-radius: 50%;
+      width: 1.4rem;
+      height: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step-row input { margin-top: 1.6rem; }
+
+    .btn-remove-step {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #cc3333;
+      font-size: 1.1rem;
+      padding: .3rem;
+      margin-top: 1.6rem;
+      border-radius: 6px;
+      transition: background .2s;
+    }
+    .btn-remove-step:hover { background: var(--err-bg); }
+
+    .btn-add-step {
+      background: none;
+      border: 1.5px dashed var(--accent);
+      color: var(--accent);
+      padding: .55rem 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 600;
+      width: 100%;
+      margin-top: .5rem;
+      transition: background .2s;
+    }
+    .btn-add-step:hover { background: var(--accent-light); }
+
+    /* ── Primary button ──────────────────────────────────────── */
+    .btn-primary {
+      background: linear-gradient(135deg, #0f3460, #1a5ca8);
+      color: #fff;
+      border: none;
+      padding: .75rem 1.75rem;
+      border-radius: 9px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 2px 8px rgba(15,52,96,.25);
+    }
+    .btn-primary:hover:not(:disabled) { opacity: .9; }
+    .btn-primary:active:not(:disabled) { transform: scale(.98); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Download button ─────────────────────────────────────── */
+    .btn-download {
+      background: linear-gradient(135deg, #0a7c54, #12a570);
+      color: #fff;
+      border: none;
+      padding: .7rem 1.5rem;
+      border-radius: 9px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      transition: opacity .2s;
+      box-shadow: 0 2px 8px rgba(10,124,84,.25);
+    }
+    .btn-download:hover { opacity: .9; }
+
+    .btn-download-xml {
+      background: linear-gradient(135deg, #4527a0, #6a3fcb);
+      color: #fff;
+      border: none;
+      padding: .7rem 1.5rem;
+      border-radius: 9px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      transition: opacity .2s;
+      box-shadow: 0 2px 8px rgba(69,39,160,.3);
+    }
+    .btn-download-xml:hover { opacity: .9; }
+
+    /* ── Dark mode toggle ────────────────────────────────────── */
+    .btn-theme {
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #fff;
+      border-radius: 8px;
+      padding: .4rem .75rem;
+      cursor: pointer;
+      font-size: .82rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+      transition: background .2s;
+      margin-left: auto;
+    }
+    .btn-theme:hover { background: rgba(255,255,255,.2); }
+
+    /* ── Loader ──────────────────────────────────────────────── */
+    .loader {
+      display: none;
+      align-items: center;
+      gap: .75rem;
+      color: var(--accent);
+      font-size: .88rem;
+      font-weight: 600;
+      padding: .5rem 0;
+    }
+    .loader.visible { display: flex; }
+    .spinner {
+      width: 1.4rem;
+      height: 1.4rem;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Error banner ────────────────────────────────────────── */
+    .error-banner {
+      display: none;
+      background: var(--err-bg);
+      border: 1px solid var(--err-border);
+      border-radius: 8px;
+      color: var(--err-text);
+      padding: .75rem 1rem;
+      font-size: .85rem;
+      margin-top: .75rem;
+    }
+    .error-banner.visible { display: block; }
+
+    /* ── Results section ─────────────────────────────────────── */
+    #results-section { display: none; }
+    #results-section.visible { display: block; }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .badge {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 20px;
+      padding: .15rem .6rem;
+      font-size: .75rem;
+      font-weight: 700;
+      margin-left: .4rem;
+    }
+
+    /* ── Test case cards ─────────────────────────────────────── */
+    .tc-list { display: flex; flex-direction: column; gap: 1rem; }
+
+    .tc-card {
+      border: 1.5px solid var(--tc-border);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    .tc-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+
+    .tc-header {
+      background: var(--tc-bg);
+      padding: .75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tc-header-left { display: flex; align-items: center; gap: .6rem; flex: 1; min-width: 0; }
+    .tc-num {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 6px;
+      padding: .15rem .5rem;
+      font-size: .72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .tc-title {
+      font-weight: 600;
+      font-size: .88rem;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tc-badges { display: flex; gap: .4rem; flex-shrink: 0; }
+    .pill {
+      padding: .18rem .55rem;
+      border-radius: 20px;
+      font-size: .7rem;
+      font-weight: 700;
+      border: 1px solid;
+    }
+    .pill-type { background: #e8f4fd; color: #0a6ebd; border-color: #b6d9f7; }
+    .pill-prio-critical { background: #fdecea; color: #b91c1c; border-color: #f5c2be; }
+    .pill-prio-high     { background: #fff3e0; color: #c05621; border-color: #fbd38d; }
+    .pill-prio-medium   { background: #fefce8; color: #92400e; border-color: #fde68a; }
+    .pill-prio-low      { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+
+    .tc-chevron { font-size: .75rem; color: var(--text-muted); transition: transform .2s; }
+    .tc-card.open .tc-chevron { transform: rotate(180deg); }
+
+    .tc-body { display: none; padding: 1rem; border-top: 1px solid var(--tc-border); }
+    .tc-card.open .tc-body { display: block; }
+
+    .tc-field { margin-bottom: .85rem; }
+    .tc-field:last-child { margin-bottom: 0; }
+    .tc-field-label {
+      font-size: .72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      margin-bottom: .3rem;
+    }
+    .tc-field-value {
+      font-size: .85rem;
+      color: var(--text);
+      line-height: 1.55;
+      white-space: pre-wrap;
+      background: var(--field-bg);
+      border-radius: 6px;
+      padding: .6rem .75rem;
+      border: 1px solid var(--field-border);
+    }
+    .tc-field-value.gherkin {
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: .82rem;
+      color: var(--accent);
+    }
+
+    /* ── Modal editor ─────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 1rem;
+    }
+    .modal-box {
+      background: var(--card-bg); border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.35);
+      width: 100%; max-width: 740px; max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .9rem 1.2rem; border-bottom: 1px solid var(--tc-border);
+      flex-shrink: 0;
+    }
+    .modal-header h3 { margin: 0; font-size: 1rem; }
+    .modal-close {
+      background: none; border: none; font-size: 1.1rem;
+      cursor: pointer; color: var(--text-muted); padding: .2rem .5rem;
+      border-radius: 6px; transition: background .15s;
+    }
+    .modal-close:hover { background: var(--tc-border); }
+    .modal-form {
+      padding: 1rem 1.2rem; overflow-y: auto; flex: 1;
+      display: flex; flex-direction: column; gap: .75rem;
+    }
+    .modal-row { display: flex; gap: .75rem; flex-wrap: wrap; }
+    .modal-field {
+      display: flex; flex-direction: column; gap: .3rem; flex: 1; min-width: 140px;
+    }
+    .modal-field label {
+      font-size: .75rem; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .modal-field input, .modal-field select, .modal-field textarea {
+      background: var(--input-bg); border: 1px solid var(--border);
+      color: var(--text); border-radius: 7px; padding: .5rem .7rem;
+      font-size: .88rem; font-family: inherit; width: 100%; box-sizing: border-box;
+      transition: border-color .15s;
+    }
+    .modal-field input:focus, .modal-field select:focus, .modal-field textarea:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .modal-field textarea { resize: vertical; }
+    .modal-field textarea.bdd-area {
+      font-family: 'Courier New', monospace; font-size: .82rem; min-height: 210px;
+    }
+    .modal-actions {
+      display: flex; justify-content: flex-end; gap: .6rem;
+      padding: .9rem 1.2rem; border-top: 1px solid var(--tc-border); flex-shrink: 0;
+    }
+    .btn-modal-cancel {
+      background: var(--tc-bg); border: 1px solid var(--tc-border);
+      color: var(--text); padding: .55rem 1.2rem; border-radius: 8px;
+      cursor: pointer; font-size: .88rem;
+    }
+    .btn-modal-save {
+      background: var(--accent); color: #fff; border: none;
+      padding: .55rem 1.4rem; border-radius: 8px;
+      cursor: pointer; font-size: .88rem; font-weight: 600;
+    }
+    .btn-modal-save:hover { opacity: .9; }
+
+    /* ── Editor panel ──────────────────────────────────────────── */
+    .editor-upload-area {
+      border: 2px dashed var(--tc-border); border-radius: 12px;
+      padding: 2.5rem 1rem; text-align: center; cursor: pointer;
+      transition: border-color .2s, background .2s;
+    }
+    .editor-upload-area:hover, .editor-upload-area.drag-over {
+      border-color: var(--accent); background: var(--accent-light);
+    }
+    .editor-upload-area .upload-icon { font-size: 2rem; display: block; margin-bottom: .4rem; }
+    .editor-upload-area p { margin: .4rem 0; color: var(--text-muted); font-size: .88rem; }
+    .editor-table-wrap { overflow-x: auto; margin-top: .75rem; }
+    .editor-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+    .editor-table th {
+      background: var(--tc-bg); padding: .5rem .7rem;
+      text-align: left; font-size: .74rem; text-transform: uppercase;
+      letter-spacing: .04em; color: var(--text-muted);
+      border-bottom: 1.5px solid var(--tc-border); white-space: nowrap;
+    }
+    .editor-table td {
+      padding: .45rem .7rem; border-bottom: 1px solid var(--tc-border); vertical-align: middle;
+    }
+    .editor-table tr:hover td { background: var(--accent-light); }
+    .td-title { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-section { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: .78rem; }
+    .td-refs { font-family: monospace; font-size: .82rem; color: var(--accent); }
+    .btn-edit-case {
+      background: var(--accent-light); border: 1px solid var(--accent);
+      color: var(--accent); border-radius: 6px; padding: .25rem .55rem;
+      font-size: .78rem; cursor: pointer; margin-right: .3rem;
+    }
+    .btn-edit-case:hover { background: var(--accent); color: #fff; }
+    .btn-del-case {
+      background: #fff1f0; border: 1px solid #ffa39e;
+      color: #cf1322; border-radius: 6px; padding: .25rem .55rem; font-size: .78rem; cursor: pointer;
+    }
+    .btn-del-case:hover { background: #ffa39e; color: #fff; }
+    .dark .btn-del-case { background: #2d1315; border-color: #cf1322; color: #ff7875; }
+    .editor-toolbar {
+      display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; margin-bottom: .75rem;
+    }
+    .btn-add-case {
+      background: var(--tc-bg); border: 1.5px dashed var(--tc-border);
+      color: var(--text-muted); padding: .45rem 1rem; border-radius: 8px;
+      cursor: pointer; font-size: .84rem; transition: all .15s;
+    }
+    .btn-add-case:hover { border-color: var(--accent); color: var(--accent); }
+    .editor-count { margin-left: auto; font-size: .8rem; color: var(--text-muted); }
+    .editor-count strong { color: var(--accent); }
+
+    /* ── Import guide ─────────────────────────────────────────── */
+    .import-guide {
+      margin-top: 1.25rem;
+      border: 1.5px solid var(--tc-border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .import-guide-header {
+      background: var(--tc-bg);
+      padding: .65rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      font-size: .85rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .import-guide-body {
+      display: none;
+      padding: 1rem;
+      border-top: 1px solid var(--tc-border);
+    }
+    .import-guide.open .import-guide-body { display: block; }
+    .import-guide.open .import-guide-chevron { transform: rotate(180deg); }
+    .import-guide-chevron { font-size: .75rem; color: var(--text-muted); transition: transform .2s; }
+
+    .guide-steps { counter-reset: step; list-style: none; padding: 0; margin: 0 0 1rem; }
+    .guide-steps li {
+      counter-increment: step;
+      display: flex;
+      gap: .75rem;
+      align-items: flex-start;
+      margin-bottom: .65rem;
+      font-size: .85rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .guide-steps li::before {
+      content: counter(step);
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      width: 1.4rem;
+      height: 1.4rem;
+      min-width: 1.4rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 700;
+    }
+
+    .mapping-table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: .5rem; }
+    .mapping-table th {
+      background: var(--tc-bg);
+      padding: .45rem .75rem;
+      text-align: left;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-bottom: 2px solid var(--tc-border);
+    }
+    .mapping-table td {
+      padding: .4rem .75rem;
+      border-bottom: 1px solid var(--tc-border);
+      color: var(--text);
+    }
+    .mapping-table tr:last-child td { border-bottom: none; }
+    .col-csv { font-family: monospace; color: var(--accent); font-size: .8rem; }
+    .col-standard { background: #e8f4fd; color: #0a6ebd; border-radius: 4px; padding: .1rem .4rem; font-size: .75rem; }
+    .col-custom   { background: #f0fdf4; color: #166534; border-radius: 4px; padding: .1rem .4rem; font-size: .75rem; }
+
+    /* ── Panel layout ─────────────────────────────────────────── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* ── XML Batch panel ──────────────────────────────────────── */
+    .xml-upload-area {
+      border: 2px dashed var(--accent);
+      border-radius: 10px; padding: 1.5rem 1rem;
+      text-align: center; cursor: pointer;
+      background: var(--accent-light);
+      transition: background .2s, border-color .2s;
+      position: relative;
+    }
+    .xml-upload-area:hover { filter: brightness(1.04); }
+    .xml-upload-area.has-file { border-color: #12a570; background: #f0fdf4; }
+    body.dark .xml-upload-area.has-file { background: #0a2218; border-color: #12a570; }
+    .xml-upload-area input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .xml-upload-icon  { font-size: 2rem; line-height: 1; }
+    .xml-upload-label { font-size: .9rem; color: var(--accent); font-weight: 600; margin-top: .3rem; }
+    .xml-upload-hint  { font-size: .75rem; color: var(--text-muted); margin-top: .2rem; }
+    .xml-file-name    { font-size: .82rem; color: #12a570; font-weight: 700; margin-top: .4rem; }
+
+    .config-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .65rem 1.25rem; margin-top: .5rem;
+    }
+    .config-grid .full-width { grid-column: 1 / -1; }
+    .config-grid label { font-size: .78rem; font-weight: 600; margin-bottom: .25rem; }
+    .config-grid select, .config-grid input[type="text"] {
+      width: 100%; padding: .6rem .75rem;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .875rem; font-family: inherit;
+      color: var(--text); background: var(--input-bg);
+      transition: border-color .2s;
+    }
+    .config-grid select:focus, .config-grid input[type="text"]:focus {
+      outline: none; border-color: var(--accent);
+    }
+
+    .items-section { margin-top: 1.25rem; }
+    .items-section > label { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-bottom: .5rem; }
+    .items-count-badge {
+      background: var(--accent); color: #fff;
+      border-radius: 20px; padding: .1rem .6rem;
+      font-size: .72rem; font-weight: 700;
+    }
+    .items-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+    .items-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .items-table th {
+      background: var(--accent-light); color: var(--accent);
+      font-weight: 700; padding: .55rem .75rem; text-align: left;
+      font-size: .75rem; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .items-table td { padding: .35rem .5rem; border-top: 1px solid var(--border); }
+    .items-table tr:hover td { background: var(--field-bg); }
+    .items-table td.row-num { color: var(--text-muted); font-size: .72rem; width: 2rem; text-align: center; }
+    .items-table input[type="text"] {
+      width: 100%; padding: .3rem .45rem;
+      border: 1px solid transparent; border-radius: 5px;
+      font-size: .82rem; font-family: inherit;
+      color: var(--text); background: transparent;
+      transition: border-color .15s, background .15s;
+    }
+    .items-table input[type="text"]:focus {
+      outline: none; border-color: var(--accent); background: var(--input-focus);
+    }
+    .btn-remove-item {
+      background: none; border: none; cursor: pointer;
+      color: #cc3333; font-size: .9rem; padding: .2rem .4rem; border-radius: 4px;
+    }
+    .btn-remove-item:hover { background: var(--err-bg); }
+    .batch-note {
+      font-size: .78rem; color: var(--text-muted); margin-top: .6rem;
+      padding: .5rem .75rem; background: var(--accent-light);
+      border-radius: 6px; border-left: 3px solid var(--accent);
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .step-row { grid-template-columns: 1fr; }
+      .btn-remove-step { margin-top: 0; }
+      .step-row-num { display: none; }
+      .step-row input { margin-top: 0; }
+      .tc-badges { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+    <rect width="36" height="36" rx="8" fill="#0f3460"/>
+    <path d="M9 10h18M9 18h18M9 26h12" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="28" cy="26" r="5" fill="#12a570"/>
+    <path d="M25.5 26l1.5 1.5 3-3" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>
+  <div>
+    <h1>TestRail BDD Generator</h1>
+    <p>Genera casos de prueba BDD listos para importar en TestRail</p>
+  </div>
+  <button class="btn-theme" id="btn-theme" title="Cambiar tema">🌙 Oscuro</button>
+</header>
+
+<main>
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="jira">
+      <span class="tab-icon">🎫</span>Desde Jira
+    </button>
+    <button class="tab-btn" data-tab="testrail">
+      <span class="tab-icon">📋</span>Desde TestRail (Step by Step)
+    </button>
+    <button class="tab-btn" data-tab="batch">
+      <span class="tab-icon">📂</span>Batch desde XML
+    </button>
+    <button class="tab-btn" data-tab="editor">
+      <span class="tab-icon">✏️</span>Editor XML
+    </button>
+  </div>
+
+  <!-- Panel Jira -->
+  <div class="panel active" id="panel-jira">
+    <div class="card">
+      <div class="card-title">
+        🎫 Historia de Usuario Jira
+      </div>
+
+      <div class="form-group">
+        <label>Ticket de referencia <span class="hint">(opcional, ej: PROJ-123)</span></label>
+        <input type="text" id="jira-ticket" placeholder="PROJ-123" />
+      </div>
+
+      <div class="form-group">
+        <label>Descripción de la historia de usuario <span class="hint">*</span></label>
+        <textarea id="jira-description" rows="5"
+          placeholder="Como [usuario], quiero [funcionalidad] para [beneficio]..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Criterios de aceptación <span class="hint">*</span></label>
+        <textarea id="jira-acceptance" rows="6"
+          placeholder="- El usuario debe poder...&#10;- El sistema debe validar...&#10;- Cuando ocurre X, entonces Y..."></textarea>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:.5rem;">
+        <button class="btn-primary" id="btn-generate-jira">
+          ✨ Generar casos BDD
+        </button>
+        <div class="loader" id="loader-jira">
+          <div class="spinner"></div>
+          Generando con Gemini…
+        </div>
+      </div>
+      <div class="error-banner" id="error-jira"></div>
+    </div>
+  </div>
+
+  <!-- Panel TestRail -->
+  <div class="panel" id="panel-testrail">
+    <div class="card">
+      <div class="card-title">
+        📋 Caso de prueba existente (Step by Step)
+      </div>
+
+      <div class="form-group">
+        <label>Título / Contexto <span class="hint">(opcional)</span></label>
+        <input type="text" id="tr-title" placeholder="Ej: Validación de login con credenciales inválidas" />
+      </div>
+
+      <div class="form-group">
+        <label>Precondiciones <span class="hint">*</span></label>
+        <textarea id="tr-preconditions" rows="3"
+          placeholder="El usuario debe estar registrado en el sistema&#10;El entorno de pruebas debe estar disponible"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Test Data <span class="hint">(opcional)</span></label>
+        <textarea id="tr-testdata" rows="3"
+          placeholder="Usuario: testuser@ejemplo.com&#10;Contraseña válida: Test1234!&#10;Contraseña inválida: wrongpass"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Pasos y validaciones <span class="hint">* — Agrega al menos un paso</span></label>
+        <div id="steps-container"></div>
+        <button class="btn-add-step" id="btn-add-step">+ Agregar paso</button>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:.5rem;">
+        <button class="btn-primary" id="btn-generate-tr">
+          ✨ Generar casos BDD
+        </button>
+        <div class="loader" id="loader-tr">
+          <div class="spinner"></div>
+          Generando con Gemini…
+        </div>
+      </div>
+      <div class="error-banner" id="error-tr"></div>
+    </div>
+  </div>
+
+  <!-- Panel Batch XML -->
+  <div class="panel" id="panel-batch">
+    <div class="card">
+      <div class="card-title">📂 Batch desde XML</div>
+
+      <!-- Upload -->
+      <div class="form-group">
+        <label>Archivo XML <span class="hint">* — Export de Jira (RSS) o formato simple</span></label>
+        <div class="xml-upload-area" id="xml-upload-area">
+          <input type="file" id="xml-file-input" accept=".xml,.rss" />
+          <div class="xml-upload-icon">📁</div>
+          <div class="xml-upload-label">Haz clic o arrastra tu XML aquí</div>
+          <div class="xml-upload-hint">Formato Jira export (RSS) o &lt;cases&gt;&lt;case&gt;...&lt;/case&gt;&lt;/cases&gt;</div>
+          <div class="xml-file-name" id="xml-file-name"></div>
+        </div>
+      </div>
+
+      <!-- Constant config -->
+      <div class="form-group" style="margin-top:1.25rem;">
+        <label>Campos constantes <span class="hint">— se aplican iguales a todos los casos generados</span></label>
+        <div class="config-grid">
+          <div>
+            <label>Type</label>
+            <select id="batch-type">
+              <option>Functional</option>
+              <option>Integration</option>
+              <option>Security</option>
+              <option>Regression</option>
+              <option>Acceptance</option>
+            </select>
+          </div>
+          <div>
+            <label>Priority</label>
+            <select id="batch-priority">
+              <option>1 - Must Test</option>
+              <option selected>2 - Run Before Release</option>
+              <option>3 - Normal</option>
+              <option>4 - Nice to Have</option>
+            </select>
+          </div>
+          <div>
+            <label>Implementation</label>
+            <select id="batch-implementation">
+              <option>Manual</option>
+              <option>Automated</option>
+              <option>Partially Automated</option>
+              <option>Not Applicable</option>
+            </select>
+          </div>
+          <div>
+            <label>Automation Review</label>
+            <select id="batch-automation-review">
+              <option>Not</option>
+              <option>Planned</option>
+              <option>Done</option>
+              <option>In Progress</option>
+            </select>
+          </div>
+          <div class="full-width">
+            <label>Domain <span class="hint">(opcional — ej: CareLogic, Finance…)</span></label>
+            <input type="text" id="batch-domain" placeholder="Dejar vacío si no aplica" />
+          </div>
+        </div>
+        <div class="batch-note">
+          💡 <strong>Implementation</strong>, <strong>Automation Review</strong> y <strong>Domain</strong> se guardan en el CSV como
+          <code>custom_implementation</code>, <code>custom_automation_review</code> y <code>custom_domain</code>.
+          Mapéalos en TestRail al importar.
+        </div>
+      </div>
+
+      <!-- Items table (visible after parse) -->
+      <div class="items-section" id="batch-items-section" style="display:none;">
+        <label>
+          Items detectados
+          <span class="items-count-badge" id="batch-items-count">0</span>
+          <span class="hint">— edita Title, Section y References antes de generar</span>
+        </label>
+        <div class="items-table-wrap">
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th style="min-width:260px;">Title</th>
+                <th style="min-width:160px;">Section</th>
+                <th style="min-width:100px;">References</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="batch-items-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:1.25rem;">
+        <button class="btn-primary" id="btn-generate-batch" disabled>
+          ✨ Generar todos los casos BDD
+        </button>
+        <div class="loader" id="loader-batch">
+          <div class="spinner"></div>
+          <span id="batch-progress-text">Generando…</span>
+        </div>
+      </div>
+      <div class="error-banner" id="error-batch"></div>
+    </div>
+  </div>
+
+  <!-- Panel Editor XML -->
+  <div class="panel" id="panel-editor">
+    <div class="card">
+      <div class="card-title">✏️ Editor de casos XML</div>
+
+      <!-- Zona de carga -->
+      <div class="editor-upload-area" id="editor-upload-area">
+        <input type="file" id="editor-file-input" accept=".xml" style="display:none">
+        <span class="upload-icon">📂</span>
+        <strong>Clic o arrastra un XML de TestRail</strong>
+        <p>Carga un archivo generado por esta herramienta (o exportado desde TestRail) para editar los casos</p>
+      </div>
+
+      <!-- Sección de casos (oculta hasta cargar) -->
+      <div id="editor-cases-section" style="display:none; margin-top:1rem;">
+        <div class="editor-toolbar">
+          <button class="btn-add-case" id="btn-add-editor-case">＋ Agregar caso</button>
+          <button class="btn-download" id="editor-download-csv" style="padding:.45rem 1rem;">⬇ CSV</button>
+          <button class="btn-download-xml" id="editor-download-xml" style="padding:.45rem 1rem;">⬇ XML</button>
+          <span class="editor-count">Total: <strong id="editor-count">0</strong> casos</span>
+        </div>
+        <div class="editor-table-wrap">
+          <table class="editor-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Sección</th>
+                <th>Título</th>
+                <th>Tipo</th>
+                <th>Prioridad</th>
+                <th>Refs</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="editor-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de edición de caso -->
+  <div class="modal-overlay" id="case-modal" style="display:none">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modal-title-label">Editar caso</h3>
+        <button class="modal-close" id="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-form">
+        <div class="modal-row">
+          <div class="modal-field" style="flex:3">
+            <label>Título *</label>
+            <input id="m-title" type="text" placeholder="Título del caso de prueba">
+          </div>
+          <div class="modal-field" style="flex:1">
+            <label>Referencias</label>
+            <input id="m-refs" type="text" placeholder="CC-1234" list="editor-sections-refs">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Sección</label>
+            <input id="m-section" type="text" placeholder="Nombre de sección" list="editor-sections-list">
+            <datalist id="editor-sections-list"></datalist>
+          </div>
+          <div class="modal-field">
+            <label>Tipo</label>
+            <select id="m-type">
+              <option>Functional</option>
+              <option>Integration</option>
+              <option>Security</option>
+              <option>Regression</option>
+              <option>Acceptance</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>Prioridad</label>
+            <select id="m-priority">
+              <option>1 - Must Test</option>
+              <option>2 - Run Before Release</option>
+              <option>3 - Normal</option>
+              <option>4 - Nice to Have</option>
+            </select>
+          </div>
+          <div class="modal-field" style="max-width:90px">
+            <label>Estimación</label>
+            <input id="m-estimate" type="text" placeholder="5m">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Precondiciones</label>
+            <textarea id="m-preconds" rows="3" placeholder="Estado inicial requerido para ejecutar este caso"></textarea>
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>BDD Scenarios (Gherkin) *</label>
+            <textarea id="m-bdd" class="bdd-area" placeholder="Feature: ...&#10;  Scenario: ...&#10;    Given ...&#10;    When ...&#10;    Then ..."></textarea>
+          </div>
+        </div>
+        <!-- Campos custom extra (se renderizan dinámicamente) -->
+        <div id="m-extra-fields"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="modal-cancel-btn">Cancelar</button>
+        <button class="btn-modal-save" id="modal-save-btn">💾 Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  <div id="results-section">
+    <div class="card">
+      <div class="results-header">
+        <div class="card-title" style="margin-bottom:0">
+          ✅ Casos de prueba generados
+          <span class="badge" id="result-count">0</span>
+        </div>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+          <button class="btn-download" id="btn-download">
+            ⬇ Descargar CSV
+          </button>
+          <button class="btn-download-xml" id="btn-download-xml" title="Recomendado — no requiere mapeo de columnas en TestRail">
+            ⬇ Descargar XML
+          </button>
+        </div>
+      </div>
+      <div class="tc-list" id="tc-list"></div>
+
+      <!-- Guía de importación TestRail -->
+      <div class="import-guide" id="import-guide">
+        <div class="import-guide-header" onclick="document.getElementById('import-guide').classList.toggle('open')">
+          <span>📥 How to import into TestRail — step by step</span>
+          <span class="import-guide-chevron">▼</span>
+        </div>
+        <div class="import-guide-body">
+          <div style="background:var(--accent-light);border:1.5px solid var(--accent);border-radius:8px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.83rem;">
+            ⭐ <strong>Recomendado: usa el botón "Descargar XML"</strong> — el formato XML de TestRail no requiere mapeo de columnas.
+            TestRail lo reconoce automáticamente: en <strong>Import Cases</strong> selecciona <strong>XML</strong>, sube el archivo y listo.
+            Usa CSV solo si prefieres una hoja de cálculo o necesitas editar los casos antes de importar.
+          </div>
+
+          <strong style="font-size:.82rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Importar con XML (recomendado)</strong>
+          <ol class="guide-steps" style="margin-top:.5rem;">
+            <li>Descarga el archivo XML con el botón <strong>⬇ Descargar XML</strong>.</li>
+            <li>En TestRail, ve a <strong>Test Cases</strong> → ícono de engranaje → <strong>Import Cases</strong>.</li>
+            <li>Selecciona el formato <strong>XML</strong>, sube el archivo y haz clic en <strong>Import</strong>.</li>
+            <li>TestRail detecta secciones, template y campos personalizados automáticamente. ¡Listo!</li>
+          </ol>
+
+          <strong style="font-size:.82rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-top:1rem;">Importar con CSV (alternativa)</strong>
+          <ol class="guide-steps" style="margin-top:.5rem;">
+            <li>Download the CSV using the button above.</li>
+            <li>In TestRail, go to <strong>Test Cases</strong> → click the gear/settings icon → <strong>Import Cases</strong>.</li>
+            <li>Upload the CSV. You should see <em>"CSV file uploaded successfully"</em>. Click <strong>Next</strong>.</li>
+            <li>Select <strong>"Configure new mapping"</strong> and click <strong>Next</strong>.</li>
+            <li><strong>Row Layout:</strong> select <strong>"Test cases use a single row"</strong>. For the Template field, confirm it maps to <em>Behaviour Driven Development</em>.</li>
+            <li>Map each CSV column to the TestRail field using the table below. Any field not listed must be set to <em>"-- Ignore --"</em>.</li>
+            <li><strong>Save the mapping</strong> with a name (e.g. "BDD Generator") — next time select <em>"Load mapping from configuration file"</em> to skip this step.</li>
+            <li>Click <strong>Next → Import</strong> and verify the imported cases.</li>
+          </ol>
+
+          <strong style="font-size:.82rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em;">Column mapping — exact fields to select</strong>
+          <table class="mapping-table">
+            <thead>
+              <tr>
+                <th>CSV Column</th>
+                <th>Select in TestRail dropdown</th>
+                <th>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="col-csv">title</td><td>Title</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">section</td><td>Section</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">template</td><td>Template</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">type</td><td>Type</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">priority</td><td>Priority</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">estimate</td><td>Estimate</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">refs</td><td>References</td><td><span class="col-standard">Standard</span></td></tr>
+              <tr><td class="col-csv">custom_preconds</td><td>Preconditions</td><td><span class="col-custom">Custom</span></td></tr>
+              <tr><td class="col-csv">custom_bdd_scenarios</td><td>BDD Scenarios</td><td><span class="col-custom">Custom</span></td></tr>
+              <tr style="background:var(--accent-light)"><td class="col-csv" colspan="3" style="font-size:.75rem;color:var(--text-muted);padding:.35rem .75rem;">⬇ Columnas extras — solo presentes en CSV generado desde Batch XML</td></tr>
+              <tr><td class="col-csv">custom_implementation</td><td>Implementation</td><td><span class="col-custom">Custom</span></td></tr>
+              <tr><td class="col-csv">custom_automation_review</td><td>Automation Review</td><td><span class="col-custom">Custom</span></td></tr>
+              <tr><td class="col-csv">custom_domain</td><td>Domain</td><td><span class="col-custom">Custom</span></td></tr>
+            </tbody>
+          </table>
+
+          <strong style="font-size:.82rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; display:block; margin-top:1rem;">Fields to set as "-- Ignore --"</strong>
+          <p style="font-size:.8rem; color:var(--text-muted); margin:.3rem 0 .5rem;">
+            The TestRail dropdown shows many more fields. Set all of the following to <strong>-- Ignore --</strong> — they are not used with the <em>Behaviour Driven Development</em> template:
+          </p>
+          <table class="mapping-table">
+            <thead>
+              <tr>
+                <th>TestRail field in dropdown</th>
+                <th>Why ignore</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>Steps</td><td style="font-size:.78rem; color:var(--text-muted);">Steps fields belong to the <em>Test Case (Steps)</em> template. BDD template uses <em>BDD Scenarios</em> instead.</td></tr>
+              <tr><td>Steps (Additional Info)</td><td style="font-size:.78rem; color:var(--text-muted);">Same — belongs to step-by-step template only.</td></tr>
+              <tr><td>Steps (Expected Result)</td><td style="font-size:.78rem; color:var(--text-muted);">Same — belongs to step-by-step template only.</td></tr>
+              <tr><td>Steps (Step)</td><td style="font-size:.78rem; color:var(--text-muted);">Same — belongs to step-by-step template only.</td></tr>
+              <tr><td>Steps (References)</td><td style="font-size:.78rem; color:var(--text-muted);">Per-step reference links — not included in the CSV.</td></tr>
+              <tr><td>Steps (Shared Step ID)</td><td style="font-size:.78rem; color:var(--text-muted);">Shared/reusable steps feature — not used here.</td></tr>
+              <tr><td>Test Data</td><td style="font-size:.78rem; color:var(--text-muted);">Per-step field; test data is embedded inside the BDD scenario.</td></tr>
+              <tr><td>Use Case</td><td style="font-size:.78rem; color:var(--text-muted);">Optional field not populated by the generator.</td></tr>
+              <tr><td>Labels / Modules / Automation Type</td><td style="font-size:.78rem; color:var(--text-muted);">Metadata fields — not included in the CSV.</td></tr>
+              <tr><td>Automation Review / Domain / Implementation</td><td style="font-size:.78rem; color:var(--text-muted);">Present only in CSV from Batch XML tab. Ignore when importing single-case CSV.</td></tr>
+              <tr><td>Release / Project / Section Description / Section Hierarchy</td><td style="font-size:.78rem; color:var(--text-muted);">Metadata fields — not included in the CSV.</td></tr>
+            </tbody>
+          </table>
+
+          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.75rem;">
+            💡 <strong>Tip:</strong> After configuring the mapping, TestRail lets you save it as a <em>.cfg</em> file. Download it and next time upload it directly to skip the manual mapping step entirely.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+// ── Modo oscuro ────────────────────────────────────────────────────────────
+const btnTheme = document.getElementById('btn-theme');
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') applyDark();
+
+function applyDark() {
+  document.body.classList.add('dark');
+  btnTheme.textContent = '☀ Claro';
+}
+function applyLight() {
+  document.body.classList.remove('dark');
+  btnTheme.textContent = '🌙 Oscuro';
+}
+btnTheme.addEventListener('click', () => {
+  if (document.body.classList.contains('dark')) {
+    applyLight();
+    localStorage.setItem('theme', 'light');
+  } else {
+    applyDark();
+    localStorage.setItem('theme', 'dark');
+  }
+});
+
+// ── Estado global ──────────────────────────────────────────────────────────
+let generatedCases = [];
+
+// ── Tabs ───────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Steps builder (panel TestRail) ────────────────────────────────────────
+let stepCount = 0;
+
+function addStep() {
+  stepCount++;
+  const idx = stepCount;
+  const container = document.getElementById('steps-container');
+  const row = document.createElement('div');
+  row.className = 'step-row';
+  row.dataset.idx = idx;
+  row.innerHTML = `
+    <div class="step-row-num">${idx}</div>
+    <input type="text" placeholder="Paso ${idx}: acción a realizar…" class="step-action" />
+    <input type="text" placeholder="Validación / resultado esperado…" class="step-validation" />
+    <button class="btn-remove-step" title="Eliminar paso" onclick="removeStep(this)">✕</button>
+  `;
+  container.appendChild(row);
+  row.querySelector('.step-action').focus();
+}
+
+function removeStep(btn) {
+  btn.closest('.step-row').remove();
+  // Renumerar
+  document.querySelectorAll('.step-row').forEach((row, i) => {
+    row.querySelector('.step-row-num').textContent = i + 1;
+    row.querySelector('.step-action').placeholder = `Paso ${i+1}: acción a realizar…`;
+  });
+}
+
+document.getElementById('btn-add-step').addEventListener('click', addStep);
+addStep(); // Primer paso por defecto
+
+// ── Helpers UI ────────────────────────────────────────────────────────────
+function setLoading(loaderId, btnId, active) {
+  document.getElementById(loaderId).classList.toggle('visible', active);
+  document.getElementById(btnId).disabled = active;
+}
+
+function showError(errorId, msg) {
+  const el = document.getElementById(errorId);
+  el.textContent = msg;
+  el.classList.add('visible');
+}
+
+function clearError(errorId) {
+  const el = document.getElementById(errorId);
+  el.textContent = '';
+  el.classList.remove('visible');
+}
+
+// ── Prioridad → clase CSS ─────────────────────────────────────────────────
+function pillPrioClass(p) {
+  const s = (p || '').toLowerCase();
+  if (s.startsWith('1')) return 'pill-prio-critical';
+  if (s.startsWith('2')) return 'pill-prio-high';
+  if (s.startsWith('3')) return 'pill-prio-medium';
+  if (s.startsWith('4')) return 'pill-prio-low';
+  return 'pill-prio-medium';
+}
+
+// ── Render resultados ─────────────────────────────────────────────────────
+function renderResults(cases) {
+  generatedCases = cases;
+  const section = document.getElementById('results-section');
+  const list    = document.getElementById('tc-list');
+  const count   = document.getElementById('result-count');
+
+  count.textContent = cases.length;
+  list.innerHTML = '';
+
+  cases.forEach((tc, i) => {
+    const card = document.createElement('div');
+    card.className = 'tc-card';
+    card.innerHTML = `
+      <div class="tc-header">
+        <div class="tc-header-left">
+          <span class="tc-num">TC ${i+1}</span>
+          <span class="tc-title">${escHtml(tc.title || '(sin título)')}</span>
+        </div>
+        <div class="tc-badges">
+          <span class="pill pill-type">${escHtml(tc.type || 'Functional')}</span>
+          <span class="pill ${pillPrioClass(tc.priority)}">${escHtml(tc.priority || 'Medium')}</span>
+        </div>
+        <span class="tc-chevron">▼</span>
+      </div>
+      <div class="tc-body">
+        ${tcField('Sección', tc.section)}
+        ${tc.refs ? tcField('Referencia', tc.refs) : ''}
+        ${tc.estimate ? tcField('Estimación', tc.estimate) : ''}
+        ${tcField('Preconditions', tc.custom_preconds)}
+        ${tcField('BDD Scenarios', tc.custom_bdd_scenarios, true)}
+      </div>
+    `;
+    card.querySelector('.tc-header').addEventListener('click', () => {
+      card.classList.toggle('open');
+    });
+    list.appendChild(card);
+  });
+
+  // Abrir el primero por defecto
+  if (list.firstChild) list.firstChild.classList.add('open');
+
+  section.classList.add('visible');
+  section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function tcField(label, value, gherkin = false) {
+  if (!value) return '';
+  return `<div class="tc-field">
+    <div class="tc-field-label">${label}</div>
+    <div class="tc-field-value${gherkin ? ' gherkin' : ''}">${escHtml(value)}</div>
+  </div>`;
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+// ── Generar desde Jira ────────────────────────────────────────────────────
+document.getElementById('btn-generate-jira').addEventListener('click', async () => {
+  clearError('error-jira');
+
+  const description = document.getElementById('jira-description').value.trim();
+  const acceptance  = document.getElementById('jira-acceptance').value.trim();
+  const ticket      = document.getElementById('jira-ticket').value.trim();
+
+  if (!description) { showError('error-jira', 'La descripción de la historia es obligatoria.'); return; }
+  if (!acceptance)  { showError('error-jira', 'Los criterios de aceptación son obligatorios.');  return; }
+
+  setLoading('loader-jira', 'btn-generate-jira', true);
+
+  try {
+    const res = await fetch('/api/generate/jira', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description, acceptance_criteria: acceptance, jira_ticket: ticket }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
+    renderResults(data.test_cases);
+  } catch (e) {
+    showError('error-jira', '⚠ ' + e.message);
+  } finally {
+    setLoading('loader-jira', 'btn-generate-jira', false);
+  }
+});
+
+// ── Generar desde TestRail ────────────────────────────────────────────────
+document.getElementById('btn-generate-tr').addEventListener('click', async () => {
+  clearError('error-tr');
+
+  const preconditions = document.getElementById('tr-preconditions').value.trim();
+  const test_data     = document.getElementById('tr-testdata').value.trim();
+  const title_hint    = document.getElementById('tr-title').value.trim();
+
+  const stepRows = document.querySelectorAll('#steps-container .step-row');
+  const steps = [];
+  stepRows.forEach(row => {
+    const step       = row.querySelector('.step-action').value.trim();
+    const validation = row.querySelector('.step-validation').value.trim();
+    if (step) steps.push({ step, validation });
+  });
+
+  if (!preconditions) { showError('error-tr', 'Las precondiciones son obligatorias.'); return; }
+  if (steps.length === 0) { showError('error-tr', 'Agrega al menos un paso con su acción.'); return; }
+
+  setLoading('loader-tr', 'btn-generate-tr', true);
+
+  try {
+    const res = await fetch('/api/generate/testrail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ preconditions, test_data, steps, title_hint }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
+    renderResults(data.test_cases);
+  } catch (e) {
+    showError('error-tr', '⚠ ' + e.message);
+  } finally {
+    setLoading('loader-tr', 'btn-generate-tr', false);
+  }
+});
+
+// ── Batch XML ─────────────────────────────────────────────────────────────────
+const xmlFileInput  = document.getElementById('xml-file-input');
+const xmlUploadArea = document.getElementById('xml-upload-area');
+
+xmlFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  document.getElementById('xml-file-name').textContent = '📄 ' + file.name;
+  xmlUploadArea.classList.add('has-file');
+  clearError('error-batch');
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const res = await fetch('/api/parse-xml', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error al parsear el XML');
+    renderBatchItems(data.items);
+    document.getElementById('btn-generate-batch').disabled = false;
+  } catch (err) {
+    showError('error-batch', '⚠ ' + err.message);
+    xmlUploadArea.classList.remove('has-file');
+  }
+});
+
+function renderBatchItems(items) {
+  const tbody   = document.getElementById('batch-items-body');
+  const section = document.getElementById('batch-items-section');
+  document.getElementById('batch-items-count').textContent = items.length;
+  tbody.innerHTML = '';
+
+  items.forEach((item, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="row-num">${i + 1}</td>
+      <td><input type="text" value="${escHtml(item.title)}"   class="bi-title"   /></td>
+      <td><input type="text" value="${escHtml(item.section)}" class="bi-section" /></td>
+      <td><input type="text" value="${escHtml(item.refs)}"    class="bi-refs"    /></td>
+      <td><button class="btn-remove-item" title="Eliminar">✕</button></td>
+    `;
+    tr.querySelector('.btn-remove-item').addEventListener('click', () => {
+      tr.remove();
+      // Renumerar
+      document.querySelectorAll('#batch-items-body tr').forEach((r, idx) => {
+        r.querySelector('.row-num').textContent = idx + 1;
+      });
+      document.getElementById('batch-items-count').textContent =
+        document.querySelectorAll('#batch-items-body tr').length;
+    });
+    tbody.appendChild(tr);
+  });
+
+  section.style.display = 'block';
+}
+
+function getBatchItemsFromTable() {
+  return Array.from(document.querySelectorAll('#batch-items-body tr')).map(tr => ({
+    title:       tr.querySelector('.bi-title').value.trim(),
+    section:     tr.querySelector('.bi-section').value.trim(),
+    refs:        tr.querySelector('.bi-refs').value.trim(),
+    description: '',
+  })).filter(item => item.title);
+}
+
+document.getElementById('btn-generate-batch').addEventListener('click', async () => {
+  clearError('error-batch');
+
+  const items = getBatchItemsFromTable();
+  if (!items.length) {
+    showError('error-batch', 'No hay items para generar. Sube un XML primero.');
+    return;
+  }
+
+  const typeOverride     = document.getElementById('batch-type').value;
+  const priorityOverride = document.getElementById('batch-priority').value;
+  const implementation   = document.getElementById('batch-implementation').value;
+  const autoReview       = document.getElementById('batch-automation-review').value;
+  const domain           = document.getElementById('batch-domain').value.trim();
+
+  const extraFields = {};
+  if (implementation) extraFields['custom_implementation']   = implementation;
+  if (autoReview)     extraFields['custom_automation_review'] = autoReview;
+  if (domain)         extraFields['custom_domain']            = domain;
+
+  setLoading('loader-batch', 'btn-generate-batch', true);
+  document.getElementById('batch-progress-text').textContent =
+    `Generando casos para ${items.length} item(s)…`;
+
+  try {
+    const res = await fetch('/api/generate/batch', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items,
+        type_override:     typeOverride,
+        priority_override: priorityOverride,
+        extra_fields:      extraFields,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error desconocido');
+
+    if (data.errors && data.errors.length) {
+      const msg = data.errors.map(e => `• ${e.item}: ${e.error}`).join('\n');
+      showError('error-batch', `⚠ Algunos items fallaron:\n${msg}`);
+    }
+
+    document.getElementById('batch-progress-text').textContent =
+      `✅ ${data.count} casos generados de ${items.length} items`;
+
+    renderResults(data.test_cases);
+  } catch (err) {
+    showError('error-batch', '⚠ ' + err.message);
+  } finally {
+    setLoading('loader-batch', 'btn-generate-batch', false);
+  }
+});
+
+// ── Descargar CSV ─────────────────────────────────────────────────────────
+document.getElementById('btn-download').addEventListener('click', async () => {
+  if (!generatedCases.length) return;
+
+  try {
+    const res = await fetch('/api/download/csv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test_cases: generatedCases }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error al generar CSV: ' + (err.detail || 'desconocido'));
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'test_cases_testrail.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Error de red: ' + e.message);
+  }
+});
+
+// ── Descargar XML ─────────────────────────────────────────────────────────
+document.getElementById('btn-download-xml').addEventListener('click', async () => {
+  if (!generatedCases.length) return;
+
+  try {
+    const res = await fetch('/api/download/xml', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test_cases: generatedCases }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error al generar XML: ' + (err.detail || 'desconocido'));
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'test_cases_testrail.xml';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Error de red: ' + e.message);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Editor XML ───────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+let editorCases = [];       // casos cargados en el editor
+let editingIndex = null;    // índice del caso en edición (-1 = nuevo)
+
+// ── Helper: descarga (reutilizable) ─────────────────────────────────────────
+async function downloadEditorFile(endpoint, filename) {
+  if (!editorCases.length) { alert('No hay casos para descargar.'); return; }
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test_cases: editorCases }),
+    });
+    if (!res.ok) { const e = await res.json(); alert('Error: ' + (e.detail || 'desconocido')); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { alert('Error de red: ' + e.message); }
+}
+
+document.getElementById('editor-download-csv').addEventListener('click', () =>
+  downloadEditorFile('/api/download/csv', 'test_cases_editados.csv'));
+document.getElementById('editor-download-xml').addEventListener('click', () =>
+  downloadEditorFile('/api/download/xml', 'test_cases_editados.xml'));
+
+// ── Render tabla del editor ──────────────────────────────────────────────────
+function renderEditorTable() {
+  const tbody = document.getElementById('editor-table-body');
+  document.getElementById('editor-count').textContent = editorCases.length;
+
+  // Actualizar datalist de secciones para el modal
+  const sections = [...new Set(editorCases.map(c => c.section).filter(Boolean))];
+  const dl = document.getElementById('editor-sections-list');
+  dl.innerHTML = sections.map(s => `<option value="${s}">`).join('');
+
+  tbody.innerHTML = '';
+  editorCases.forEach((c, i) => {
+    const tr = document.createElement('tr');
+    const priorityShort = (c.priority || '').replace(/^\d - /, '');
+    tr.innerHTML = `
+      <td style="color:var(--text-muted);font-size:.78rem">${i + 1}</td>
+      <td class="td-section" title="${escHtml(c.section || '')}">${escHtml(c.section || '—')}</td>
+      <td class="td-title"  title="${escHtml(c.title || '')}">${escHtml(c.title || '(sin título)')}</td>
+      <td style="font-size:.8rem">${escHtml(c.type || '')}</td>
+      <td style="font-size:.78rem;white-space:nowrap">${escHtml(priorityShort)}</td>
+      <td class="td-refs">${escHtml(c.refs || '')}</td>
+      <td>
+        <button class="btn-edit-case" data-i="${i}">✏️ Editar</button>
+        <button class="btn-del-case"  data-i="${i}">🗑</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+
+  // Listeners dinámicos
+  tbody.querySelectorAll('.btn-edit-case').forEach(btn =>
+    btn.addEventListener('click', () => openModal(parseInt(btn.dataset.i))));
+  tbody.querySelectorAll('.btn-del-case').forEach(btn =>
+    btn.addEventListener('click', () => {
+      if (confirm('¿Eliminar este caso?')) {
+        editorCases.splice(parseInt(btn.dataset.i), 1);
+        renderEditorTable();
+      }
+    }));
+}
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+const KNOWN_FIELDS = new Set(['title','section','template','type','priority','estimate','refs','custom_preconds','custom_bdd_scenarios']);
+
+function openModal(index) {
+  editingIndex = index;
+  const isNew  = index === -1;
+  const c      = isNew ? {} : editorCases[index];
+
+  document.getElementById('modal-title-label').textContent = isNew ? 'Nuevo caso' : 'Editar caso';
+  document.getElementById('m-title').value    = c.title    || '';
+  document.getElementById('m-section').value  = c.section  || '';
+  document.getElementById('m-refs').value     = c.refs     || '';
+  document.getElementById('m-estimate').value = c.estimate || '';
+  document.getElementById('m-preconds').value = c.custom_preconds      || '';
+  document.getElementById('m-bdd').value      = c.custom_bdd_scenarios || '';
+
+  const typeEl = document.getElementById('m-type');
+  typeEl.value = c.type || 'Functional';
+
+  const priEl = document.getElementById('m-priority');
+  priEl.value = c.priority || '3 - Normal';
+
+  // Campos custom extra
+  const extraContainer = document.getElementById('m-extra-fields');
+  extraContainer.innerHTML = '';
+  const extraKeys = Object.keys(c).filter(k => !KNOWN_FIELDS.has(k) && k.startsWith('custom_'));
+  if (extraKeys.length) {
+    extraKeys.forEach(key => {
+      const label = key.replace('custom_', '').replace(/_/g, ' ');
+      const div = document.createElement('div');
+      div.className = 'modal-row';
+      div.innerHTML = `<div class="modal-field">
+        <label>${escHtml(label)}</label>
+        <input type="text" data-extra-key="${escHtml(key)}" value="${escHtml(c[key] || '')}">
+      </div>`;
+      extraContainer.appendChild(div);
+    });
+  }
+
+  document.getElementById('case-modal').style.display = 'flex';
+  document.getElementById('m-title').focus();
+}
+
+function closeModal() {
+  document.getElementById('case-modal').style.display = 'none';
+  editingIndex = null;
+}
+
+document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+document.getElementById('case-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('case-modal')) closeModal();
+});
+
+document.getElementById('modal-save-btn').addEventListener('click', () => {
+  const title = document.getElementById('m-title').value.trim();
+  if (!title) { alert('El título es obligatorio.'); return; }
+
+  const updated = {
+    title,
+    section:              document.getElementById('m-section').value.trim(),
+    template:             'Behaviour Driven Development',
+    type:                 document.getElementById('m-type').value,
+    priority:             document.getElementById('m-priority').value,
+    estimate:             document.getElementById('m-estimate').value.trim(),
+    refs:                 document.getElementById('m-refs').value.trim(),
+    custom_preconds:      document.getElementById('m-preconds').value.trim(),
+    custom_bdd_scenarios: document.getElementById('m-bdd').value.trim(),
+  };
+
+  // Preservar campos extra
+  document.querySelectorAll('#m-extra-fields [data-extra-key]').forEach(inp => {
+    updated[inp.dataset.extraKey] = inp.value.trim();
+  });
+
+  if (editingIndex === -1) {
+    editorCases.push(updated);
+  } else {
+    editorCases[editingIndex] = updated;
+  }
+
+  renderEditorTable();
+  closeModal();
+});
+
+// Botón agregar caso nuevo
+document.getElementById('btn-add-editor-case').addEventListener('click', () => openModal(-1));
+
+// ── Carga del XML ────────────────────────────────────────────────────────────
+async function loadEditorXML(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const uploadArea   = document.getElementById('editor-upload-area');
+  const casesSection = document.getElementById('editor-cases-section');
+
+  uploadArea.innerHTML = '<span class="upload-icon">⏳</span><p>Cargando…</p>';
+
+  try {
+    const res = await fetch('/api/load-xml', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error al cargar el XML');
+
+    editorCases = data.cases;
+    renderEditorTable();
+    casesSection.style.display = 'block';
+
+    // Actualizar zona de carga para mostrar el archivo y permitir cambiar
+    uploadArea.innerHTML = `
+      <input type="file" id="editor-file-input" accept=".xml" style="display:none">
+      <span class="upload-icon">✅</span>
+      <strong>${escHtml(file.name)}</strong>
+      <p>${data.count} casos cargados — <a href="#" id="editor-change-file" style="color:var(--accent)">Cargar otro XML</a></p>`;
+    uploadArea.style.cursor = 'default';
+    setupEditorFileInput();
+
+  } catch (err) {
+    uploadArea.innerHTML = `
+      <input type="file" id="editor-file-input" accept=".xml" style="display:none">
+      <span class="upload-icon">📂</span>
+      <strong>Clic o arrastra un XML de TestRail</strong>
+      <p style="color:#cf1322">⚠ ${escHtml(err.message)}</p>`;
+    uploadArea.style.cursor = 'pointer';
+    setupEditorFileInput();
+  }
+}
+
+function setupEditorFileInput() {
+  const uploadArea = document.getElementById('editor-upload-area');
+  const fileInput  = document.getElementById('editor-file-input');
+
+  uploadArea.addEventListener('click', (e) => {
+    if (e.target.id === 'editor-change-file') return;
+    fileInput && fileInput.click();
+  });
+
+  const changeLink = document.getElementById('editor-change-file');
+  if (changeLink) changeLink.addEventListener('click', e => { e.preventDefault(); fileInput && fileInput.click(); });
+
+  if (fileInput) {
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) loadEditorXML(fileInput.files[0]);
+    });
+  }
+
+  // Drag & drop
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+  uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) loadEditorXML(f);
+  });
+}
+
+// Inicializar drag & drop y click en la zona de carga
+setupEditorFileInput();
+</script>
+</body>
+</html>
