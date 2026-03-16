@@ -1345,9 +1345,13 @@
           <span class="editor-count">Total: <strong id="editor-count">0</strong> casos</span>
         </div>
         <div class="section-path-row" style="margin-bottom:.5rem;">
-          <label>📂 Ruta de sección <span class="hint">(opcional)</span></label>
+          <label>📂 Sección destino en TestRail <span class="hint">(opcional)</span></label>
           <input type="text" id="editor-section-path-input" class="section-path-input"
-            placeholder="Ej: Configurable Forms/Enhanced Save" />
+            placeholder="Ej: Configurable Forms / Enhanced Save / Enhanced Save to Oracle Job"
+            oninput="updateSectionPathHint('editor-section-path-hint', this.value)" />
+        </div>
+        <div id="editor-section-path-hint" style="display:none; margin-bottom:.75rem; padding:.6rem .9rem;
+          background:#fff8e1; border:1.5px solid #f59e0b; border-radius:8px; font-size:.82rem; color:#92400e;">
         </div>
         <div class="editor-table-wrap">
           <table class="editor-table">
@@ -1523,9 +1527,13 @@
           </button>
         </div>
         <div class="section-path-row">
-          <label>📂 Ruta de sección <span class="hint">(opcional — para importar en subsección existente)</span></label>
+          <label>📂 Sección destino en TestRail <span class="hint">(opcional)</span></label>
           <input type="text" id="section-path-input" class="section-path-input"
-            placeholder="Ej: Configurable Forms/Enhanced Save" />
+            placeholder="Ej: Configurable Forms / Enhanced Save / Enhanced Save to Oracle Job"
+            oninput="updateSectionPathHint('section-path-hint', this.value)" />
+        </div>
+        <div id="section-path-hint" style="display:none; margin-top:.5rem; padding:.6rem .9rem;
+          background:#fff8e1; border:1.5px solid #f59e0b; border-radius:8px; font-size:.82rem; color:#92400e;">
         </div>
       </div>
       <div class="tc-list" id="tc-list"></div>
@@ -1625,6 +1633,20 @@
 </main>
 
 <script>
+// ── Section path hint ─────────────────────────────────────────────────────────
+function updateSectionPathHint(hintId, value) {
+  const el = document.getElementById(hintId);
+  const path = value.trim();
+  if (!path) { el.style.display = 'none'; return; }
+  const parts = path.split('/').map(p => p.trim()).filter(Boolean);
+  const arrows = parts.join(' → ');
+  el.innerHTML = `⚠️ <strong>Antes de importar el XML en TestRail:</strong><br>
+    Navega a <strong>${arrows}</strong> en el sidebar izquierdo,
+    luego haz clic en <strong>Import Cases → XML</strong> desde esa sección.
+    TestRail importará los casos directamente ahí.`;
+  el.style.display = 'block';
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 let sessionToken = sessionStorage.getItem('capiToken') || '';
 
@@ -2152,13 +2174,12 @@ document.getElementById('btn-download').addEventListener('click', async () => {
 // ── Descargar XML ─────────────────────────────────────────────────────────
 document.getElementById('btn-download-xml').addEventListener('click', async () => {
   if (!generatedCases.length) return;
-  const sectionPath = document.getElementById('section-path-input').value.trim();
 
   try {
     const res = await authFetch('/api/download/xml', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_cases: generatedCases, section_path: sectionPath }),
+      body: JSON.stringify({ test_cases: generatedCases }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -2185,13 +2206,13 @@ let editorCases = [];       // casos cargados en el editor
 let editingIndex = null;    // índice del caso en edición (-1 = nuevo)
 
 // ── Helper: descarga (reutilizable) ─────────────────────────────────────────
-async function downloadEditorFile(endpoint, filename, sectionPath = '') {
+async function downloadEditorFile(endpoint, filename) {
   if (!editorCases.length) { alert('No hay casos para descargar.'); return; }
   try {
     const res = await authFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_cases: editorCases, section_path: sectionPath }),
+      body: JSON.stringify({ test_cases: editorCases }),
     });
     if (!res.ok) { const e = await res.json(); alert('Error: ' + (e.detail || 'desconocido')); return; }
     const blob = await res.blob();
@@ -2204,10 +2225,8 @@ async function downloadEditorFile(endpoint, filename, sectionPath = '') {
 
 document.getElementById('editor-download-csv').addEventListener('click', () =>
   downloadEditorFile('/api/download/csv', 'test_cases_editados.csv'));
-document.getElementById('editor-download-xml').addEventListener('click', () => {
-  const sp = document.getElementById('editor-section-path-input').value.trim();
-  downloadEditorFile('/api/download/xml', 'test_cases_editados.xml', sp);
-});
+document.getElementById('editor-download-xml').addEventListener('click', () =>
+  downloadEditorFile('/api/download/xml', 'test_cases_editados.xml'));
 
 // ── Render tabla del editor ──────────────────────────────────────────────────
 function renderEditorTable() {
