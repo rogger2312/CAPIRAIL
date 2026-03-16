@@ -701,6 +701,240 @@
       border-radius: 6px; border-left: 3px solid var(--accent);
     }
 
+    /* ── Contexto visual (imágenes) ──────────────────────────── */
+    .img-context-section {
+      background: var(--accent-light);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .85rem 1.1rem;
+      margin-bottom: 1.1rem;
+    }
+    .img-context-label {
+      font-size: .8rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: .4rem;
+      display: flex;
+      align-items: center;
+      gap: .4rem;
+    }
+
+    /* ── Botón de código en textareas ────────────────────────── */
+    .form-group-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: .35rem;
+    }
+    .form-group-label-row label { margin-bottom: 0; }
+    .btn-code-toggle {
+      background: var(--tc-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      border-radius: 5px;
+      padding: .18rem .5rem;
+      font-size: .72rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: 'Consolas', monospace;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .btn-code-toggle:hover, .btn-code-toggle.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .code-panel {
+      margin-top: .4rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1.5px solid #30363d;
+    }
+    .code-panel-header {
+      background: #1e1e2e;
+      color: #a6adc8;
+      font-size: .72rem;
+      font-weight: 600;
+      padding: .3rem .7rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      font-family: 'Consolas', monospace;
+      user-select: none;
+    }
+    .code-panel-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .code-editor-ta {
+      width: 100%;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      border: none;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: .82rem;
+      padding: .65rem .8rem;
+      resize: vertical;
+      min-height: 100px;
+      line-height: 1.55;
+      tab-size: 2;
+      display: block;
+    }
+    .code-editor-ta:focus { outline: none; }
+    .code-editor-ta::placeholder { color: #585b70; }
+
+    /* Zona de carga de imágenes */
+    .img-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: .6rem .9rem;
+      text-align: center;
+      cursor: pointer;
+      font-size: .83rem;
+      color: var(--text-muted);
+      transition: border-color .2s, background .2s;
+      margin-top: .3rem;
+      user-select: none;
+    }
+    .img-drop-zone:hover, .img-drop-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--card-bg);
+    }
+    .img-drop-zone.full { opacity: .55; cursor: not-allowed; }
+    .img-preview-row {
+      display: flex;
+      gap: .5rem;
+      flex-wrap: wrap;
+      margin-top: .5rem;
+    }
+    .img-preview-item {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid var(--border);
+      flex-shrink: 0;
+    }
+    .img-preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .img-preview-remove {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: rgba(0,0,0,.65);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 17px;
+      height: 17px;
+      font-size: .6rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    /* ── Título Generator ────────────────────────────────────── */
+    .titles-output {
+      display: flex;
+      flex-direction: column;
+      gap: .5rem;
+      margin-top: 1rem;
+    }
+    .title-item {
+      display: grid;
+      grid-template-columns: 2rem 1fr auto;
+      align-items: center;
+      gap: .5rem;
+    }
+    .title-num {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-light);
+      border-radius: 50%;
+      width: 1.6rem;
+      height: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .title-input {
+      width: 100%;
+      padding: .55rem .75rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: .875rem;
+      font-family: inherit;
+      color: var(--text);
+      background: var(--input-bg);
+      transition: border-color .2s;
+    }
+    .title-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,195,247,.1);
+    }
+    .btn-remove-title {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #cc3333;
+      font-size: .9rem;
+      padding: .3rem .4rem;
+      border-radius: 6px;
+      transition: background .15s;
+      flex-shrink: 0;
+    }
+    .btn-remove-title:hover { background: var(--err-bg); }
+    .titles-toolbar {
+      display: flex;
+      align-items: center;
+      gap: .75rem;
+      flex-wrap: wrap;
+      margin-top: .75rem;
+      padding-top: .75rem;
+      border-top: 1px solid var(--border);
+    }
+    .btn-add-title {
+      background: none;
+      border: 1.5px dashed var(--accent);
+      color: var(--accent);
+      padding: .4rem .9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: .84rem;
+      font-weight: 600;
+      transition: background .15s;
+    }
+    .btn-add-title:hover { background: var(--accent-light); }
+    .btn-download-xlsx {
+      background: linear-gradient(135deg, #1d6f42, #21a35e);
+      color: #fff;
+      border: none;
+      padding: .7rem 1.5rem;
+      border-radius: 9px;
+      font-size: .9rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      transition: opacity .2s;
+      box-shadow: 0 2px 8px rgba(29,111,66,.3);
+    }
+    .btn-download-xlsx:hover { opacity: .9; }
+    .titles-count-badge {
+      margin-left: auto;
+      font-size: .8rem;
+      color: var(--text-muted);
+    }
+    .titles-count-badge strong { color: var(--accent); }
+
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 640px) {
       .step-row { grid-template-columns: 1fr; }
@@ -742,6 +976,9 @@
     <button class="tab-btn" data-tab="editor">
       <span class="tab-icon">✏️</span>Editor XML
     </button>
+    <button class="tab-btn" data-tab="titles">
+      <span class="tab-icon">🏷</span>Títulos de TC
+    </button>
   </div>
 
   <!-- Panel Jira -->
@@ -757,15 +994,49 @@
       </div>
 
       <div class="form-group">
-        <label>Descripción de la historia de usuario <span class="hint">*</span></label>
+        <div class="form-group-label-row">
+          <label>Descripción de la historia de usuario <span class="hint">*</span></label>
+          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-jira-desc', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
+        </div>
         <textarea id="jira-description" rows="5"
           placeholder="Como [usuario], quiero [funcionalidad] para [beneficio]..."></textarea>
+        <div class="code-panel" id="code-jira-desc" style="display:none">
+          <div class="code-panel-header">
+            <span class="code-panel-dot" style="background:#ff5f57"></span>
+            <span class="code-panel-dot" style="background:#febc2e"></span>
+            <span class="code-panel-dot" style="background:#28c840"></span>
+            &nbsp;JSON / código de contexto
+          </div>
+          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
+        </div>
       </div>
 
       <div class="form-group">
-        <label>Criterios de aceptación <span class="hint">*</span></label>
+        <div class="form-group-label-row">
+          <label>Criterios de aceptación <span class="hint">*</span></label>
+          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-jira-acc', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
+        </div>
         <textarea id="jira-acceptance" rows="6"
           placeholder="- El usuario debe poder...&#10;- El sistema debe validar...&#10;- Cuando ocurre X, entonces Y..."></textarea>
+        <div class="code-panel" id="code-jira-acc" style="display:none">
+          <div class="code-panel-header">
+            <span class="code-panel-dot" style="background:#ff5f57"></span>
+            <span class="code-panel-dot" style="background:#febc2e"></span>
+            <span class="code-panel-dot" style="background:#28c840"></span>
+            &nbsp;JSON / código de contexto
+          </div>
+          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
+        </div>
+      </div>
+
+      <!-- Contexto visual -->
+      <div class="img-context-section">
+        <div class="img-context-label">🖼 Imágenes de contexto <span class="hint">(hasta 3 — mockups, capturas, diagramas…)</span></div>
+        <div class="img-drop-zone" id="jira-img-zone">
+          <input type="file" id="jira-img-input" accept="image/*" multiple style="display:none">
+          📷 Clic o arrastra imágenes aquí
+        </div>
+        <div class="img-preview-row" id="jira-img-previews"></div>
       </div>
 
       <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:.5rem;">
@@ -794,21 +1065,55 @@
       </div>
 
       <div class="form-group">
-        <label>Precondiciones <span class="hint">*</span></label>
+        <div class="form-group-label-row">
+          <label>Precondiciones <span class="hint">*</span></label>
+          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-tr-prec', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
+        </div>
         <textarea id="tr-preconditions" rows="3"
           placeholder="El usuario debe estar registrado en el sistema&#10;El entorno de pruebas debe estar disponible"></textarea>
+        <div class="code-panel" id="code-tr-prec" style="display:none">
+          <div class="code-panel-header">
+            <span class="code-panel-dot" style="background:#ff5f57"></span>
+            <span class="code-panel-dot" style="background:#febc2e"></span>
+            <span class="code-panel-dot" style="background:#28c840"></span>
+            &nbsp;JSON / código de contexto
+          </div>
+          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
+        </div>
       </div>
 
       <div class="form-group">
-        <label>Test Data <span class="hint">(opcional)</span></label>
+        <div class="form-group-label-row">
+          <label>Test Data <span class="hint">(opcional)</span></label>
+          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-tr-data', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
+        </div>
         <textarea id="tr-testdata" rows="3"
           placeholder="Usuario: testuser@ejemplo.com&#10;Contraseña válida: Test1234!&#10;Contraseña inválida: wrongpass"></textarea>
+        <div class="code-panel" id="code-tr-data" style="display:none">
+          <div class="code-panel-header">
+            <span class="code-panel-dot" style="background:#ff5f57"></span>
+            <span class="code-panel-dot" style="background:#febc2e"></span>
+            <span class="code-panel-dot" style="background:#28c840"></span>
+            &nbsp;JSON / código de contexto
+          </div>
+          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
+        </div>
       </div>
 
       <div class="form-group">
         <label>Pasos y validaciones <span class="hint">* — Agrega al menos un paso</span></label>
         <div id="steps-container"></div>
         <button class="btn-add-step" id="btn-add-step">+ Agregar paso</button>
+      </div>
+
+      <!-- Contexto visual -->
+      <div class="img-context-section">
+        <div class="img-context-label">🖼 Imágenes de contexto <span class="hint">(hasta 3 — mockups, capturas, diagramas…)</span></div>
+        <div class="img-drop-zone" id="tr-img-zone">
+          <input type="file" id="tr-img-input" accept="image/*" multiple style="display:none">
+          📷 Clic o arrastra imágenes aquí
+        </div>
+        <div class="img-preview-row" id="tr-img-previews"></div>
       </div>
 
       <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:.5rem;">
@@ -1043,6 +1348,72 @@
     </div>
   </div>
 
+  <!-- Panel Títulos de TC -->
+  <div class="panel" id="panel-titles">
+    <div class="card">
+      <div class="card-title">🏷 Generador de títulos para casos de prueba</div>
+
+      <div class="form-group">
+        <div class="form-group-label-row">
+          <label>Descripción de los casos de prueba <span class="hint">* — escribe los escenarios o funcionalidades a cubrir</span></label>
+          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-titles-main', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
+        </div>
+        <textarea id="titles-input" rows="8"
+          placeholder="Ejemplos:&#10;- Login con credenciales incorrectas&#10;- Recuperación de contraseña por email&#10;- Acceso con usuario bloqueado&#10;- Cierre de sesión automático por inactividad&#10;&#10;O describe la funcionalidad completa y el modelo generará los títulos necesarios."></textarea>
+        <div class="code-panel" id="code-titles-main" style="display:none">
+          <div class="code-panel-header">
+            <span class="code-panel-dot" style="background:#ff5f57"></span>
+            <span class="code-panel-dot" style="background:#febc2e"></span>
+            <span class="code-panel-dot" style="background:#28c840"></span>
+            &nbsp;JSON / código de contexto
+          </div>
+          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
+        </div>
+      </div>
+
+      <!-- Imágenes de contexto -->
+      <div class="img-context-section">
+        <div class="img-context-label">🖼 Imágenes de contexto <span class="hint">(hasta 3 — mockups, capturas, diagramas…)</span></div>
+        <div class="img-drop-zone" id="titles-img-zone">
+          <input type="file" id="titles-img-input" accept="image/*" multiple style="display:none">
+          📷 Clic o arrastra imágenes aquí
+        </div>
+        <div class="img-preview-row" id="titles-img-previews"></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <button class="btn-primary" id="btn-generate-titles">
+          🏷 Generar títulos
+        </button>
+        <div class="loader" id="loader-titles">
+          <div class="spinner"></div>
+          Generando con Gemini…
+        </div>
+      </div>
+      <div class="error-banner" id="error-titles"></div>
+    </div>
+
+    <!-- Resultados de títulos -->
+    <div class="card" id="titles-results-section" style="display:none">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem;">
+        <div class="card-title" style="margin-bottom:0">
+          ✅ Títulos generados
+          <span class="badge" id="titles-result-count">0</span>
+        </div>
+      </div>
+
+      <div class="titles-output" id="titles-list"></div>
+
+      <div class="titles-toolbar">
+        <button class="btn-add-title" id="btn-add-title-item">＋ Agregar título</button>
+        <button class="btn-download-xlsx" id="btn-download-titles-xlsx">
+          ⬇ Descargar Excel (.xlsx)
+        </button>
+        <span class="titles-count-badge">Total: <strong id="titles-total-count">0</strong></span>
+      </div>
+    </div>
+  </div>
+
   <!-- Resultados -->
   <div id="results-section">
     <div class="card">
@@ -1182,6 +1553,95 @@ btnTheme.addEventListener('click', () => {
 
 // ── Estado global ──────────────────────────────────────────────────────────
 let generatedCases = [];
+let jiraImages = [];   // base64 data-URLs para panel Jira
+let trImages   = [];   // base64 data-URLs para panel TestRail
+
+// ── Botón de código en textareas ──────────────────────────────────────────
+function toggleCode(panelId, btn) {
+  const panel = document.getElementById(panelId);
+  const open  = panel.style.display === 'none';
+  panel.style.display = open ? 'block' : 'none';
+  btn.classList.toggle('active', open);
+  if (open) panel.querySelector('.code-editor-ta').focus();
+}
+
+// Obtiene el valor de un textarea + el contenido de su code panel (si existe)
+function getFieldValue(textareaId, codePanelId) {
+  const main = document.getElementById(textareaId).value.trim();
+  const panel = codePanelId ? document.getElementById(codePanelId) : null;
+  const code  = panel ? panel.querySelector('.code-editor-ta').value.trim() : '';
+  if (!code) return main;
+  return main + '\n\n```\n' + code + '\n```';
+}
+
+// ── Gestión de imágenes ───────────────────────────────────────────────────
+function setupImageZone(zoneId, inputId, previewId, imagesArray) {
+  const zone     = document.getElementById(zoneId);
+  const input    = document.getElementById(inputId);
+  const previews = document.getElementById(previewId);
+
+  function updateZoneState() {
+    if (imagesArray.length >= 3) zone.classList.add('full');
+    else zone.classList.remove('full');
+  }
+
+  function renderPreviews() {
+    previews.innerHTML = '';
+    imagesArray.forEach((src, idx) => {
+      const item = document.createElement('div');
+      item.className = 'img-preview-item';
+      item.innerHTML = `<img src="${src}" alt="img ${idx+1}">
+        <button class="img-preview-remove" title="Eliminar imagen">✕</button>`;
+      item.querySelector('button').addEventListener('click', () => {
+        imagesArray.splice(idx, 1);
+        renderPreviews();
+        updateZoneState();
+      });
+      previews.appendChild(item);
+    });
+    updateZoneState();
+  }
+
+  async function addFiles(files) {
+    for (const file of Array.from(files)) {
+      if (imagesArray.length >= 3) break;
+      if (!file.type.startsWith('image/')) continue;
+      const b64 = await fileToBase64(file);
+      imagesArray.push(b64);
+    }
+    renderPreviews();
+  }
+
+  zone.addEventListener('click', () => {
+    if (imagesArray.length >= 3) return;
+    input.value = '';
+    input.click();
+  });
+  input.addEventListener('change', () => addFiles(input.files));
+
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (imagesArray.length < 3) zone.classList.add('drag-over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    addFiles(e.dataTransfer.files);
+  });
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+setupImageZone('jira-img-zone', 'jira-img-input', 'jira-img-previews', jiraImages);
+setupImageZone('tr-img-zone',   'tr-img-input',   'tr-img-previews',   trImages);
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1319,12 +1779,12 @@ function escHtml(str) {
 document.getElementById('btn-generate-jira').addEventListener('click', async () => {
   clearError('error-jira');
 
-  const description = document.getElementById('jira-description').value.trim();
-  const acceptance  = document.getElementById('jira-acceptance').value.trim();
+  const description = getFieldValue('jira-description', 'code-jira-desc');
+  const acceptance  = getFieldValue('jira-acceptance',  'code-jira-acc');
   const ticket      = document.getElementById('jira-ticket').value.trim();
 
-  if (!description) { showError('error-jira', 'La descripción de la historia es obligatoria.'); return; }
-  if (!acceptance)  { showError('error-jira', 'Los criterios de aceptación son obligatorios.');  return; }
+  if (!document.getElementById('jira-description').value.trim()) { showError('error-jira', 'La descripción de la historia es obligatoria.'); return; }
+  if (!document.getElementById('jira-acceptance').value.trim())  { showError('error-jira', 'Los criterios de aceptación son obligatorios.');  return; }
 
   setLoading('loader-jira', 'btn-generate-jira', true);
 
@@ -1332,7 +1792,12 @@ document.getElementById('btn-generate-jira').addEventListener('click', async () 
     const res = await fetch('/api/generate/jira', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description, acceptance_criteria: acceptance, jira_ticket: ticket }),
+      body: JSON.stringify({
+        description,
+        acceptance_criteria: acceptance,
+        jira_ticket: ticket,
+        images: jiraImages,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
@@ -1348,8 +1813,8 @@ document.getElementById('btn-generate-jira').addEventListener('click', async () 
 document.getElementById('btn-generate-tr').addEventListener('click', async () => {
   clearError('error-tr');
 
-  const preconditions = document.getElementById('tr-preconditions').value.trim();
-  const test_data     = document.getElementById('tr-testdata').value.trim();
+  const preconditions = getFieldValue('tr-preconditions', 'code-tr-prec');
+  const test_data     = getFieldValue('tr-testdata',      'code-tr-data');
   const title_hint    = document.getElementById('tr-title').value.trim();
 
   const stepRows = document.querySelectorAll('#steps-container .step-row');
@@ -1360,7 +1825,7 @@ document.getElementById('btn-generate-tr').addEventListener('click', async () =>
     if (step) steps.push({ step, validation });
   });
 
-  if (!preconditions) { showError('error-tr', 'Las precondiciones son obligatorias.'); return; }
+  if (!document.getElementById('tr-preconditions').value.trim()) { showError('error-tr', 'Las precondiciones son obligatorias.'); return; }
   if (steps.length === 0) { showError('error-tr', 'Agrega al menos un paso con su acción.'); return; }
 
   setLoading('loader-tr', 'btn-generate-tr', true);
@@ -1369,7 +1834,13 @@ document.getElementById('btn-generate-tr').addEventListener('click', async () =>
     const res = await fetch('/api/generate/testrail', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ preconditions, test_data, steps, title_hint }),
+      body: JSON.stringify({
+        preconditions,
+        test_data,
+        steps,
+        title_hint,
+        images: trImages,
+      }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
@@ -1782,6 +2253,101 @@ function setupEditorFileInput() {
 
 // Inicializar drag & drop y click en la zona de carga
 setupEditorFileInput();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Generador de títulos ──────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+let titlesImages = [];
+setupImageZone('titles-img-zone', 'titles-img-input', 'titles-img-previews', titlesImages);
+
+let currentTitles = [];
+
+function renderTitlesList() {
+  const list = document.getElementById('titles-list');
+  const total = document.getElementById('titles-total-count');
+  list.innerHTML = '';
+
+  currentTitles.forEach((title, i) => {
+    const row = document.createElement('div');
+    row.className = 'title-item';
+    row.innerHTML = `
+      <span class="title-num">${i + 1}</span>
+      <input type="text" class="title-input" value="${escHtml(title)}" placeholder="Título del caso de prueba…">
+      <button class="btn-remove-title" title="Eliminar">✕</button>
+    `;
+    row.querySelector('.title-input').addEventListener('input', e => {
+      currentTitles[i] = e.target.value;
+    });
+    row.querySelector('.btn-remove-title').addEventListener('click', () => {
+      currentTitles.splice(i, 1);
+      renderTitlesList();
+    });
+    list.appendChild(row);
+  });
+
+  total.textContent = currentTitles.length;
+  document.getElementById('titles-result-count').textContent = currentTitles.length;
+}
+
+document.getElementById('btn-generate-titles').addEventListener('click', async () => {
+  clearError('error-titles');
+
+  const rawInput = document.getElementById('titles-input').value.trim();
+  if (!rawInput) { showError('error-titles', 'Escribe al menos una descripción de caso de prueba.'); return; }
+
+  const testCases = getFieldValue('titles-input', 'code-titles-main');
+
+  setLoading('loader-titles', 'btn-generate-titles', true);
+
+  try {
+    const res = await fetch('/api/generate/titles', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test_cases: testCases, images: titlesImages }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
+
+    currentTitles = data.titles;
+    renderTitlesList();
+    document.getElementById('titles-results-section').style.display = 'block';
+    document.getElementById('titles-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (e) {
+    showError('error-titles', '⚠ ' + e.message);
+  } finally {
+    setLoading('loader-titles', 'btn-generate-titles', false);
+  }
+});
+
+document.getElementById('btn-add-title-item').addEventListener('click', () => {
+  currentTitles.push('');
+  renderTitlesList();
+  // Enfocar el último input
+  const inputs = document.querySelectorAll('#titles-list .title-input');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+});
+
+document.getElementById('btn-download-titles-xlsx').addEventListener('click', async () => {
+  const titles = currentTitles.filter(t => t.trim());
+  if (!titles.length) { alert('No hay títulos para descargar.'); return; }
+
+  try {
+    const res = await fetch('/api/download/titles-xlsx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ titles }),
+    });
+    if (!res.ok) { const e = await res.json(); alert('Error: ' + (e.detail || 'desconocido')); return; }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'test_case_titles.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    alert('Error de red: ' + e.message);
+  }
+});
 </script>
 </body>
 </html>

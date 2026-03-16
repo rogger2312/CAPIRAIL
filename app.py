@@ -2,6 +2,8 @@ import os
 import csv
 import json
 import io
+import base64
+import openpyxl
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import defaultdict
@@ -35,6 +37,7 @@ class JiraInput(BaseModel):
     description: str
     acceptance_criteria: str
     jira_ticket: Optional[str] = ""
+    images: List[str] = []   # base64 data-URLs (máx 3)
 
 class StepInput(BaseModel):
     step: str
@@ -45,6 +48,11 @@ class TestRailInput(BaseModel):
     test_data: Optional[str] = ""
     steps: List[StepInput]
     title_hint: Optional[str] = ""
+    images: List[str] = []   # base64 data-URLs (máx 3)
+
+class TitleGeneratorInput(BaseModel):
+    test_cases: str          # descripciones de casos, una por línea o texto libre
+    images: List[str] = []   # base64 data-URLs opcionales (máx 3)
 
 class BatchItem(BaseModel):
     title: str
@@ -84,12 +92,30 @@ def get_gemini_client():
 
 # ─── Prompts ──────────────────────────────────────────────────────────────────
 
+TITLE_SYSTEM_PROMPT = """You are a QA expert specializing in test case naming conventions.
+Your task is to generate clear, professional test case titles in English.
+
+STRICT RULES:
+- Titles must NOT contain the words "verify", "validate", or "confirm" (in any form or capitalization).
+- Titles must NOT include sensitive data (passwords, tokens, personal information, credentials).
+- Each title must clearly indicate the specific purpose of the test, describing what is being checked or evaluated.
+- All titles must be in English.
+- Titles should be concise but descriptive (max 120 characters).
+- Use action verbs such as: "Check", "Ensure", "Test", "Assert", "Evaluate", "Examine", "Display", "Prevent", "Allow", "Handle", "Return", "Submit", "Navigate", etc.
+- If images are provided, analyze them to understand the feature being tested and use that context.
+
+Respond ONLY with a valid JSON array of strings (the titles), no explanations, no markdown code blocks.
+Example: ["Check that the login page displays an error for incorrect credentials", "Ensure the dashboard loads after a successful authentication"]
+"""
+
 SYSTEM_PROMPT = """Eres un experto en QA y testing de software especializado en metodología BDD (Behavior Driven Development).
 Tu tarea es generar casos de prueba en formato Gherkin listos para importar en TestRail usando el template "Behaviour Driven Development".
 
 REGLAS IMPORTANTES:
-- Genera entre 3 y 8 casos de prueba relevantes y no redundantes.
-- Cada caso debe cubrir un escenario distinto (happy path, casos borde, errores, seguridad).
+- Determina la cantidad óptima de casos de prueba según la complejidad del requerimiento (mínimo 3, máximo 15).
+- Cada caso debe cubrir un escenario distinto (happy path, casos borde, errores, seguridad, etc.).
+- Si se incluyen imágenes, analízalas detalladamente y úsalas como contexto visual para generar mejores escenarios.
+- Si se incluyen fragmentos de código o JSON, analízalos para entender la estructura de datos y generar escenarios precisos.
 - Responde ÚNICAMENTE con un array JSON válido, sin explicaciones adicionales, sin bloques de código markdown.
 - El JSON debe seguir exactamente el esquema indicado.
 - TODOS los textos del JSON (títulos, precondiciones, pasos, resultados esperados) deben estar en INGLÉS.
@@ -187,15 +213,34 @@ Return a JSON array where each object has EXACTLY these keys:
 
 # ─── Función de llamada a Gemini ─────────────────────────────────────────────
 
-def call_gemini(user_prompt: str) -> List[dict]:
+def call_gemini(user_prompt: str, images: List[str] = []) -> List[dict]:
     try:
         client = get_gemini_client()
+
+        # Construir contenido multimodal si hay imágenes
+        if images:
+            parts: list = [genai_types.Part.from_text(text=user_prompt)]
+            for img_b64 in images[:3]:
+                if ',' in img_b64:
+                    header, data = img_b64.split(',', 1)
+                    mime = header.split(';')[0].split(':')[1]
+                else:
+                    data = img_b64
+                    mime = 'image/jpeg'
+                parts.append(genai_types.Part.from_bytes(
+                    data=base64.b64decode(data),
+                    mime_type=mime,
+                ))
+            contents = parts
+        else:
+            contents = user_prompt
+
         response = client.models.generate_content(
             model="gemini-2.5-flash",
             config=genai_types.GenerateContentConfig(
                 system_instruction=SYSTEM_PROMPT,
             ),
-            contents=user_prompt,
+            contents=contents,
         )
         text_content = response.text
     except HTTPException:
@@ -459,7 +504,7 @@ def root():
 @app.post("/api/generate/jira")
 def generate_from_jira(data: JiraInput):
     prompt = prompt_from_jira(data)
-    cases  = call_gemini(prompt)
+    cases  = call_gemini(prompt, images=data.images)
     return {"test_cases": cases, "count": len(cases)}
 
 
@@ -468,7 +513,7 @@ def generate_from_testrail(data: TestRailInput):
     if not data.steps:
         raise HTTPException(status_code=400, detail="Debes proporcionar al menos un paso")
     prompt = prompt_from_testrail(data)
-    cases  = call_gemini(prompt)
+    cases  = call_gemini(prompt, images=data.images)
     return {"test_cases": cases, "count": len(cases)}
 
 
@@ -602,6 +647,103 @@ def download_xml(payload: dict):
         io.BytesIO(xml_content.encode("utf-8")),
         media_type="application/xml",
         headers={"Content-Disposition": "attachment; filename=test_cases_testrail.xml"},
+    )
+
+
+@app.post("/api/generate/titles")
+def generate_titles(data: TitleGeneratorInput):
+    """Genera títulos de casos de prueba siguiendo convenciones estrictas de naming."""
+    user_prompt = f"""Generate test case titles for the following test cases or feature description:
+
+{data.test_cases}
+
+Return a JSON array of strings where each string is a title for one test case.
+Generate as many titles as needed to cover the described scenarios thoroughly."""
+
+    try:
+        client = get_gemini_client()
+
+        if data.images:
+            parts: list = [genai_types.Part.from_text(text=user_prompt)]
+            for img_b64 in data.images[:3]:
+                if ',' in img_b64:
+                    header, d = img_b64.split(',', 1)
+                    mime = header.split(';')[0].split(':')[1]
+                else:
+                    d, mime = img_b64, 'image/jpeg'
+                parts.append(genai_types.Part.from_bytes(data=base64.b64decode(d), mime_type=mime))
+            contents = parts
+        else:
+            contents = user_prompt
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            config=genai_types.GenerateContentConfig(system_instruction=TITLE_SYSTEM_PROMPT),
+            contents=contents,
+        )
+        text_content = (response.text or '').strip()
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al llamar a Gemini: {type(e).__name__}: {str(e)}")
+
+    if text_content.startswith("```"):
+        lines = text_content.split("\n")
+        text_content = "\n".join(lines[1:])
+        if text_content.endswith("```"):
+            text_content = text_content[:-3].strip()
+
+    try:
+        titles = json.loads(text_content)
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"El modelo devolvió JSON inválido: {str(e)}\n\nRespuesta: {text_content[:500]}")
+
+    if not isinstance(titles, list):
+        raise HTTPException(status_code=500, detail="El modelo no devolvió una lista de títulos")
+
+    return {"titles": [str(t) for t in titles], "count": len(titles)}
+
+
+@app.post("/api/download/titles-xlsx")
+def download_titles_xlsx(payload: dict):
+    """Descarga los títulos generados como archivo Excel (.xlsx)."""
+    titles = payload.get("titles", [])
+    if not titles:
+        raise HTTPException(status_code=400, detail="No hay títulos para exportar")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Test Case Titles"
+
+    # Cabecera
+    ws.append(["#", "Test Case Title"])
+    ws.column_dimensions["A"].width = 6
+    ws.column_dimensions["B"].width = 90
+
+    from openpyxl.styles import Font, PatternFill, Alignment
+    header_font  = Font(bold=True, color="FFFFFF")
+    header_fill  = PatternFill("solid", fgColor="0F3460")
+    header_align = Alignment(horizontal="center", vertical="center")
+
+    for cell in ws[1]:
+        cell.font      = header_font
+        cell.fill      = header_fill
+        cell.alignment = header_align
+
+    # Filas
+    wrap = Alignment(wrap_text=True, vertical="top")
+    for i, title in enumerate(titles, 1):
+        ws.append([i, str(title)])
+        ws.cell(row=i + 1, column=2).alignment = wrap
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=test_case_titles.xlsx"},
     )
 
 
