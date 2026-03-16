@@ -935,6 +935,40 @@
     }
     .titles-count-badge strong { color: var(--accent); }
 
+    /* ── Section path input ──────────────────────────────────── */
+    .section-path-row {
+      margin-top: .65rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      flex-wrap: wrap;
+    }
+    .section-path-row label {
+      font-size: .78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      white-space: nowrap;
+      margin: 0;
+    }
+    .section-path-input {
+      flex: 1;
+      min-width: 220px;
+      max-width: 420px;
+      padding: .42rem .75rem;
+      font-size: .82rem;
+      border: 1.5px solid var(--border);
+      border-radius: 7px;
+      background: var(--input-bg);
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color .2s;
+    }
+    .section-path-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(79,195,247,.1);
+    }
+
     /* ── Login overlay ───────────────────────────────────────── */
     .login-overlay {
       position: fixed; inset: 0; z-index: 9999;
@@ -1310,6 +1344,11 @@
           <button class="btn-download-xml" id="editor-download-xml" style="padding:.45rem 1rem;">⬇ XML</button>
           <span class="editor-count">Total: <strong id="editor-count">0</strong> casos</span>
         </div>
+        <div class="section-path-row" style="margin-bottom:.5rem;">
+          <label>📂 Ruta de sección <span class="hint">(opcional)</span></label>
+          <input type="text" id="editor-section-path-input" class="section-path-input"
+            placeholder="Ej: Configurable Forms/Enhanced Save" />
+        </div>
         <div class="editor-table-wrap">
           <table class="editor-table">
             <thead>
@@ -1482,6 +1521,11 @@
           <button class="btn-download-xml" id="btn-download-xml" title="Recomendado — no requiere mapeo de columnas en TestRail">
             ⬇ Descargar XML
           </button>
+        </div>
+        <div class="section-path-row">
+          <label>📂 Ruta de sección <span class="hint">(opcional — para importar en subsección existente)</span></label>
+          <input type="text" id="section-path-input" class="section-path-input"
+            placeholder="Ej: Configurable Forms/Enhanced Save" />
         </div>
       </div>
       <div class="tc-list" id="tc-list"></div>
@@ -2108,12 +2152,13 @@ document.getElementById('btn-download').addEventListener('click', async () => {
 // ── Descargar XML ─────────────────────────────────────────────────────────
 document.getElementById('btn-download-xml').addEventListener('click', async () => {
   if (!generatedCases.length) return;
+  const sectionPath = document.getElementById('section-path-input').value.trim();
 
   try {
     const res = await authFetch('/api/download/xml', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_cases: generatedCases }),
+      body: JSON.stringify({ test_cases: generatedCases, section_path: sectionPath }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -2140,13 +2185,13 @@ let editorCases = [];       // casos cargados en el editor
 let editingIndex = null;    // índice del caso en edición (-1 = nuevo)
 
 // ── Helper: descarga (reutilizable) ─────────────────────────────────────────
-async function downloadEditorFile(endpoint, filename) {
+async function downloadEditorFile(endpoint, filename, sectionPath = '') {
   if (!editorCases.length) { alert('No hay casos para descargar.'); return; }
   try {
-    const res = await fetch(endpoint, {
+    const res = await authFetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_cases: editorCases }),
+      body: JSON.stringify({ test_cases: editorCases, section_path: sectionPath }),
     });
     if (!res.ok) { const e = await res.json(); alert('Error: ' + (e.detail || 'desconocido')); return; }
     const blob = await res.blob();
@@ -2159,8 +2204,10 @@ async function downloadEditorFile(endpoint, filename) {
 
 document.getElementById('editor-download-csv').addEventListener('click', () =>
   downloadEditorFile('/api/download/csv', 'test_cases_editados.csv'));
-document.getElementById('editor-download-xml').addEventListener('click', () =>
-  downloadEditorFile('/api/download/xml', 'test_cases_editados.xml'));
+document.getElementById('editor-download-xml').addEventListener('click', () => {
+  const sp = document.getElementById('editor-section-path-input').value.trim();
+  downloadEditorFile('/api/download/xml', 'test_cases_editados.xml', sp);
+});
 
 // ── Render tabla del editor ──────────────────────────────────────────────────
 function renderEditorTable() {

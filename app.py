@@ -427,12 +427,13 @@ def _priority_id(priority_str: str) -> str:
     return part if part.isdigit() else '3'
 
 
-def cases_to_xml(cases: List[dict]) -> str:
+def cases_to_xml(cases: List[dict], section_path: str = "") -> str:
     """Genera XML en formato TestRail probado:
        - Raíz <sections> (import en suite existente)
        - <references> (no <refs>)
        - <priority> como número
        - CDATA para contenido Gherkin
+       - section_path: ruta padre opcional, ej: "Configurable Forms/Enhanced Save"
     """
     # Agrupar por sección manteniendo orden de aparición
     sections: dict = {}
@@ -479,6 +480,16 @@ def cases_to_xml(cases: List[dict]) -> str:
                 if key not in skip and value:
                     field_name = key[7:] if key.startswith('custom_') else key
                     ET.SubElement(custom_el, field_name).text = str(value)
+
+    # Envolver en jerarquía de secciones padre si se especificó section_path
+    if section_path:
+        parts = [p.strip() for p in section_path.split('/') if p.strip()]
+        for part in reversed(parts):
+            wrapper = ET.Element('sections')
+            wrapper_section = ET.SubElement(wrapper, 'section')
+            ET.SubElement(wrapper_section, 'name').text = part
+            wrapper_section.append(root)
+            root = wrapper
 
     # Convertir a DOM de minidom para aplicar CDATA en bdd_scenarios y pretty-print
     raw = ET.tostring(root, encoding='unicode')
@@ -661,10 +672,11 @@ def download_csv(payload: dict, _: None = Depends(verify_token)):
 def download_xml(payload: dict, _: None = Depends(verify_token)):
     """Genera XML en formato oficial de TestRail para importar directamente."""
     cases = payload.get("test_cases", [])
+    section_path = payload.get("section_path", "").strip()
     if not cases:
         raise HTTPException(status_code=400, detail="No hay casos de prueba para exportar")
 
-    xml_content = cases_to_xml(cases)
+    xml_content = cases_to_xml(cases, section_path=section_path)
     return StreamingResponse(
         io.BytesIO(xml_content.encode("utf-8")),
         media_type="application/xml",
