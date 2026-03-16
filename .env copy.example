@@ -1,0 +1,6 @@
+# Copia este archivo como .env y completa las variables
+
+GEMINI_API_KEY=AIza-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Contraseña de acceso a la app (deja vacío para deshabilitar el login)
+APP_PASSWORD=tu_password_secreto

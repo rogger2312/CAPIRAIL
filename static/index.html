@@ -935,6 +935,46 @@
     }
     .titles-count-badge strong { color: var(--accent); }
 
+    /* ── Login overlay ───────────────────────────────────────── */
+    .login-overlay {
+      position: fixed; inset: 0; z-index: 9999;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-overlay.hidden { display: none; }
+    .login-box {
+      background: #fff; border-radius: 18px;
+      box-shadow: 0 8px 56px rgba(0,0,0,.45);
+      padding: 2.75rem 2.25rem; width: 100%; max-width: 380px; text-align: center;
+    }
+    .login-logo { font-size: 2.8rem; margin-bottom: .6rem; }
+    .login-box h2 { font-size: 1.3rem; font-weight: 700; color: #1a1a2e; margin-bottom: .3rem; }
+    .login-box p  { font-size: .84rem; color: #666; margin-bottom: 1.6rem; }
+    .login-input {
+      width: 100%; padding: .75rem 1rem; border: 1.5px solid #dde1ea;
+      border-radius: 9px; font-size: .95rem; margin-bottom: .75rem;
+      outline: none; transition: border-color .2s; font-family: inherit;
+    }
+    .login-input:focus { border-color: #0f3460; box-shadow: 0 0 0 3px rgba(15,52,96,.1); }
+    .login-btn {
+      width: 100%; padding: .78rem;
+      background: linear-gradient(135deg, #0f3460, #1a5ca8);
+      color: #fff; border: none; border-radius: 9px;
+      font-size: .95rem; font-weight: 700; cursor: pointer; transition: opacity .2s;
+    }
+    .login-btn:hover { opacity: .88; }
+    .login-error {
+      color: #b91c1c; font-size: .84rem; margin-top: .65rem;
+      display: none; background: #fdecea; border-radius: 7px; padding: .5rem .75rem;
+    }
+    .btn-logout {
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22);
+      color: #fff; border-radius: 8px; padding: .4rem .75rem; cursor: pointer;
+      font-size: .82rem; font-weight: 600; display: flex; align-items: center;
+      gap: .4rem; transition: background .2s; margin-left: .5rem;
+    }
+    .btn-logout:hover { background: rgba(220,38,38,.35); }
+
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 640px) {
       .step-row { grid-template-columns: 1fr; }
@@ -946,6 +986,18 @@
   </style>
 </head>
 <body>
+
+<!-- Login overlay -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <div class="login-logo">🔐</div>
+    <h2>TestRail BDD Generator</h2>
+    <p>Ingresa la contraseña para acceder</p>
+    <input type="password" class="login-input" id="login-password" placeholder="Contraseña" autocomplete="current-password" />
+    <button class="login-btn" id="login-btn">Ingresar</button>
+    <div class="login-error" id="login-error">Contraseña incorrecta. Intenta de nuevo.</div>
+  </div>
+</div>
 
 <header>
   <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
@@ -959,6 +1011,7 @@
     <p>Genera casos de prueba BDD listos para importar en TestRail</p>
   </div>
   <button class="btn-theme" id="btn-theme" title="Cambiar tema">🌙 Oscuro</button>
+  <button class="btn-logout" id="btn-logout" title="Cerrar sesión" style="display:none">🚪 Salir</button>
 </header>
 
 <main>
@@ -1528,6 +1581,59 @@
 </main>
 
 <script>
+// ── Auth ──────────────────────────────────────────────────────────────────────
+let sessionToken = sessionStorage.getItem('capiToken') || '';
+
+function authFetch(url, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers || {},
+    sessionToken ? { 'Authorization': 'Bearer ' + sessionToken } : {}
+  );
+  return fetch(url, opts);
+}
+
+function checkAuth() {
+  const overlay  = document.getElementById('login-overlay');
+  const btnLogout = document.getElementById('btn-logout');
+  if (sessionToken) {
+    overlay.classList.add('hidden');
+    btnLogout.style.display = '';
+  } else {
+    overlay.classList.remove('hidden');
+    btnLogout.style.display = 'none';
+    setTimeout(() => document.getElementById('login-password').focus(), 100);
+  }
+}
+
+document.getElementById('login-btn').addEventListener('click', async () => {
+  const pw = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+  if (!pw) return;
+  try {
+    const res  = await authFetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+    const data = await res.json();
+    if (!res.ok) { errEl.style.display = 'block'; return; }
+    sessionToken = data.token;
+    sessionStorage.setItem('capiToken', sessionToken);
+    checkAuth();
+  } catch { errEl.style.display = 'block'; }
+});
+
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-btn').click();
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+  sessionToken = '';
+  sessionStorage.removeItem('capiToken');
+  checkAuth();
+});
+
+checkAuth();
+
 // ── Modo oscuro ────────────────────────────────────────────────────────────
 const btnTheme = document.getElementById('btn-theme');
 const savedTheme = localStorage.getItem('theme');
@@ -1789,7 +1895,7 @@ document.getElementById('btn-generate-jira').addEventListener('click', async () 
   setLoading('loader-jira', 'btn-generate-jira', true);
 
   try {
-    const res = await fetch('/api/generate/jira', {
+    const res = await authFetch('/api/generate/jira', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1831,7 +1937,7 @@ document.getElementById('btn-generate-tr').addEventListener('click', async () =>
   setLoading('loader-tr', 'btn-generate-tr', true);
 
   try {
-    const res = await fetch('/api/generate/testrail', {
+    const res = await authFetch('/api/generate/testrail', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1868,7 +1974,7 @@ xmlFileInput.addEventListener('change', async (e) => {
   formData.append('file', file);
 
   try {
-    const res = await fetch('/api/parse-xml', { method: 'POST', body: formData });
+    const res = await authFetch('/api/parse-xml', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error al parsear el XML');
     renderBatchItems(data.items);
@@ -1943,7 +2049,7 @@ document.getElementById('btn-generate-batch').addEventListener('click', async ()
     `Generando casos para ${items.length} item(s)…`;
 
   try {
-    const res = await fetch('/api/generate/batch', {
+    const res = await authFetch('/api/generate/batch', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1977,7 +2083,7 @@ document.getElementById('btn-download').addEventListener('click', async () => {
   if (!generatedCases.length) return;
 
   try {
-    const res = await fetch('/api/download/csv', {
+    const res = await authFetch('/api/download/csv', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ test_cases: generatedCases }),
@@ -2004,7 +2110,7 @@ document.getElementById('btn-download-xml').addEventListener('click', async () =
   if (!generatedCases.length) return;
 
   try {
-    const res = await fetch('/api/download/xml', {
+    const res = await authFetch('/api/download/xml', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ test_cases: generatedCases }),
@@ -2195,7 +2301,7 @@ async function loadEditorXML(file) {
   uploadArea.innerHTML = '<span class="upload-icon">⏳</span><p>Cargando…</p>';
 
   try {
-    const res = await fetch('/api/load-xml', { method: 'POST', body: formData });
+    const res = await authFetch('/api/load-xml', { method: 'POST', body: formData });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error al cargar el XML');
 
@@ -2301,7 +2407,7 @@ document.getElementById('btn-generate-titles').addEventListener('click', async (
   setLoading('loader-titles', 'btn-generate-titles', true);
 
   try {
-    const res = await fetch('/api/generate/titles', {
+    const res = await authFetch('/api/generate/titles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ test_cases: testCases, images: titlesImages }),
@@ -2333,7 +2439,7 @@ document.getElementById('btn-download-titles-xlsx').addEventListener('click', as
   if (!titles.length) { alert('No hay títulos para descargar.'); return; }
 
   try {
-    const res = await fetch('/api/download/titles-xlsx', {
+    const res = await authFetch('/api/download/titles-xlsx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ titles }),

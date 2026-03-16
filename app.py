@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import defaultdict
 from typing import List, Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Header
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +18,8 @@ from google.genai import types as genai_types
 from dotenv import load_dotenv
 
 load_dotenv()
+
+APP_PASSWORD = os.getenv("APP_PASSWORD", "")
 
 app = FastAPI(title="TestRail BDD Generator")
 
@@ -494,6 +496,17 @@ def cases_to_xml(cases: List[dict]) -> str:
     return pretty.decode('UTF-8') if isinstance(pretty, bytes) else pretty
 
 
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+def verify_token(authorization: Optional[str] = Header(None)):
+    if not APP_PASSWORD:
+        return  # sin contraseña configurada, acceso libre
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="No autorizado")
+    if authorization.split(" ", 1)[1] != APP_PASSWORD:
+        raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+
+
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
 @app.get("/")
@@ -501,15 +514,24 @@ def root():
     return FileResponse("static/index.html")
 
 
+@app.post("/api/login")
+def login(payload: dict):
+    if not APP_PASSWORD:
+        return {"token": "open"}
+    if payload.get("password") == APP_PASSWORD:
+        return {"token": APP_PASSWORD}
+    raise HTTPException(status_code=401, detail="Contraseña incorrecta")
+
+
 @app.post("/api/generate/jira")
-def generate_from_jira(data: JiraInput):
+def generate_from_jira(data: JiraInput, _: None = Depends(verify_token)):
     prompt = prompt_from_jira(data)
     cases  = call_gemini(prompt, images=data.images)
     return {"test_cases": cases, "count": len(cases)}
 
 
 @app.post("/api/generate/testrail")
-def generate_from_testrail(data: TestRailInput):
+def generate_from_testrail(data: TestRailInput, _: None = Depends(verify_token)):
     if not data.steps:
         raise HTTPException(status_code=400, detail="Debes proporcionar al menos un paso")
     prompt = prompt_from_testrail(data)
@@ -518,7 +540,7 @@ def generate_from_testrail(data: TestRailInput):
 
 
 @app.post("/api/parse-xml")
-async def parse_xml_endpoint(file: UploadFile = File(...)):
+async def parse_xml_endpoint(file: UploadFile = File(...), _: None = Depends(verify_token)):
     """Parsea XML de TestRail export, Jira RSS o formato simple."""
     content = await file.read()
     try:
@@ -540,7 +562,7 @@ async def parse_xml_endpoint(file: UploadFile = File(...)):
 
 
 @app.post("/api/generate/batch")
-def generate_batch(config: BatchGenerateInput):
+def generate_batch(config: BatchGenerateInput, _: None = Depends(verify_token)):
     if not config.items:
         raise HTTPException(status_code=400, detail="No hay items para procesar")
 
@@ -610,7 +632,7 @@ def parse_testrail_xml_full(content: str) -> List[dict]:
 
 
 @app.post("/api/load-xml")
-async def load_xml_cases(file: UploadFile = File(...)):
+async def load_xml_cases(file: UploadFile = File(...), _: None = Depends(verify_token)):
     """Carga un XML de TestRail y devuelve todos los casos con todos sus campos."""
     content = await file.read()
     try:
@@ -622,7 +644,7 @@ async def load_xml_cases(file: UploadFile = File(...)):
 
 
 @app.post("/api/download/csv")
-def download_csv(payload: dict):
+def download_csv(payload: dict, _: None = Depends(verify_token)):
     cases = payload.get("test_cases", [])
     if not cases:
         raise HTTPException(status_code=400, detail="No hay casos de prueba para exportar")
@@ -636,7 +658,7 @@ def download_csv(payload: dict):
 
 
 @app.post("/api/download/xml")
-def download_xml(payload: dict):
+def download_xml(payload: dict, _: None = Depends(verify_token)):
     """Genera XML en formato oficial de TestRail para importar directamente."""
     cases = payload.get("test_cases", [])
     if not cases:
@@ -651,7 +673,7 @@ def download_xml(payload: dict):
 
 
 @app.post("/api/generate/titles")
-def generate_titles(data: TitleGeneratorInput):
+def generate_titles(data: TitleGeneratorInput, _: None = Depends(verify_token)):
     """Genera títulos de casos de prueba siguiendo convenciones estrictas de naming."""
     user_prompt = f"""Generate test case titles for the following test cases or feature description:
 
@@ -705,7 +727,7 @@ Generate as many titles as needed to cover the described scenarios thoroughly.""
 
 
 @app.post("/api/download/titles-xlsx")
-def download_titles_xlsx(payload: dict):
+def download_titles_xlsx(payload: dict, _: None = Depends(verify_token)):
     """Descarga los títulos generados como archivo Excel (.xlsx)."""
     titles = payload.get("titles", [])
     if not titles:
@@ -748,7 +770,7 @@ def download_titles_xlsx(payload: dict):
 
 
 @app.get("/api/models")
-def list_models():
+def list_models(_: None = Depends(verify_token)):
     try:
         client  = get_gemini_client()
         models  = [m.name for m in client.models.list()]
