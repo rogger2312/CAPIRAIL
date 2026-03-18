@@ -1017,6 +1017,53 @@
       .step-row input { margin-top: 0; }
       .tc-badges { display: none; }
     }
+
+    /* ── Steps CSV converter ─────────────────────────────────── */
+    .steps-convert-card { margin-bottom: 1.5rem; }
+    .col-map-table { width: 100%; border-collapse: collapse; font-size: .8rem; margin-top: .4rem; }
+    .col-map-table th {
+      background: var(--accent-light); color: var(--accent);
+      font-weight: 700; padding: .4rem .7rem; text-align: left;
+      font-size: .73rem; text-transform: uppercase; letter-spacing: .03em;
+    }
+    .col-map-table td { padding: .35rem .7rem; border-top: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+    .col-map-table tr:last-child td { border-bottom: none; }
+    .col-detected { font-family: monospace; color: #166534; background: #f0fdf4; border-radius: 4px; padding: .1rem .4rem; font-size: .78rem; }
+    .col-missing   { color: var(--text-muted); font-style: italic; font-size: .78rem; }
+    .col-required-star { color: #cc3333; }
+    .steps-section-title { font-size: .78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin: .85rem 0 .4rem; }
+    .missing-fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem 1rem; margin-top: .4rem; }
+    .missing-fields-grid label { font-size: .78rem; font-weight: 600; margin-bottom: .25rem; }
+    .missing-fields-grid select,
+    .missing-fields-grid input[type="text"] {
+      width: 100%; padding: .55rem .75rem;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      font-size: .875rem; font-family: inherit;
+      color: var(--text); background: var(--input-bg); transition: border-color .2s;
+    }
+    .missing-fields-grid select:focus,
+    .missing-fields-grid input[type="text"]:focus { outline: none; border-color: var(--accent); }
+    .steps-info-note {
+      font-size: .78rem; color: var(--text-muted); margin-top: .6rem;
+      padding: .5rem .75rem; background: var(--accent-light);
+      border-radius: 6px; border-left: 3px solid var(--accent);
+    }
+    .steps-warn-note {
+      font-size: .78rem; color: #92400e; margin-top: .6rem;
+      padding: .5rem .75rem; background: #fffbeb;
+      border-radius: 6px; border-left: 3px solid #f59e0b;
+    }
+    body.dark .steps-warn-note { background: #1c1500; color: #fbbf24; }
+    .bdd-separator {
+      border: none; border-top: 2px dashed var(--border);
+      margin: .5rem 0 1.5rem;
+    }
+    .bdd-section-label {
+      font-size: .78rem; font-weight: 700; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: .05em;
+      margin-bottom: 1rem; padding: .3rem .6rem;
+      background: var(--accent-light); border-radius: 6px; display: inline-block;
+    }
   </style>
 </head>
 <body>
@@ -1057,14 +1104,8 @@
     <button class="tab-btn" data-tab="testrail">
       <span class="tab-icon">📋</span>Desde TestRail (Step by Step)
     </button>
-    <button class="tab-btn" data-tab="batch">
-      <span class="tab-icon">📂</span>Batch desde XML
-    </button>
     <button class="tab-btn" data-tab="editor">
       <span class="tab-icon">✏️</span>Editor XML
-    </button>
-    <button class="tab-btn" data-tab="titles">
-      <span class="tab-icon">🏷</span>Títulos de TC
     </button>
   </div>
 
@@ -1130,199 +1171,88 @@
         <button class="btn-primary" id="btn-generate-jira">
           ✨ Generar casos BDD
         </button>
+        <button class="btn-primary" id="btn-generate-titles-jira" style="background:linear-gradient(135deg,#4527a0,#6a3fcb)">
+          🏷 Generar títulos de TC
+        </button>
         <div class="loader" id="loader-jira">
           <div class="spinner"></div>
           Generando con Gemini…
         </div>
+        <div class="loader" id="loader-titles-jira">
+          <div class="spinner"></div>
+          Generando títulos…
+        </div>
       </div>
       <div class="error-banner" id="error-jira"></div>
+    </div>
+
+    <!-- Resultados de títulos (inline en Jira) -->
+    <div class="card" id="jira-titles-results" style="display:none; margin-top:1.5rem">
+      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem;">
+        <div class="card-title" style="margin-bottom:0">
+          🏷 Títulos generados
+          <span class="badge" id="jira-titles-count">0</span>
+        </div>
+      </div>
+      <div class="titles-output" id="jira-titles-list"></div>
+      <div class="titles-toolbar">
+        <button class="btn-add-title" id="btn-add-jira-title">＋ Agregar título</button>
+        <button class="btn-download-xlsx" id="btn-download-jira-titles">
+          ⬇ Descargar Excel (.xlsx)
+        </button>
+        <span class="titles-count-badge">Total: <strong id="jira-titles-total">0</strong></span>
+      </div>
     </div>
   </div>
 
   <!-- Panel TestRail -->
   <div class="panel" id="panel-testrail">
-    <div class="card">
-      <div class="card-title">
-        📋 Caso de prueba existente (Step by Step)
+
+    <!-- ── NEW: Step-by-step CSV converter ── -->
+    <div class="card steps-convert-card">
+      <div class="card-title">📥 Convertir Excel/CSV → TestRail (Step by Step)</div>
+
+      <div class="xml-upload-area" id="steps-upload-area">
+        <input type="file" id="steps-file-input" accept=".xlsx,.xls,.csv" />
+        <div class="xml-upload-icon">📊</div>
+        <div class="xml-upload-label">Clic o arrastra tu archivo aquí</div>
+        <div class="xml-upload-hint">.xlsx, .xls o .csv con casos de prueba paso a paso</div>
+        <div class="xml-file-name" id="steps-file-name"></div>
       </div>
 
-      <div class="form-group">
-        <label>Título / Contexto <span class="hint">(opcional)</span></label>
-        <input type="text" id="tr-title" placeholder="Ej: Validación de login con credenciales inválidas" />
+      <div class="loader" id="loader-steps-parse" style="margin-top:.9rem">
+        <div class="spinner"></div> Analizando archivo…
       </div>
+      <div class="error-banner" id="error-steps"></div>
 
-      <div class="form-group">
-        <div class="form-group-label-row">
-          <label>Precondiciones <span class="hint">*</span></label>
-          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-tr-prec', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
-        </div>
-        <textarea id="tr-preconditions" rows="3"
-          placeholder="El usuario debe estar registrado en el sistema&#10;El entorno de pruebas debe estar disponible"></textarea>
-        <div class="code-panel" id="code-tr-prec" style="display:none">
-          <div class="code-panel-header">
-            <span class="code-panel-dot" style="background:#ff5f57"></span>
-            <span class="code-panel-dot" style="background:#febc2e"></span>
-            <span class="code-panel-dot" style="background:#28c840"></span>
-            &nbsp;JSON / código de contexto
+      <!-- Results (hidden until file parsed) -->
+      <div id="steps-results" style="display:none; margin-top:1.1rem">
+
+        <div class="batch-note" id="steps-summary"></div>
+
+        <!-- Column mapping -->
+        <div id="steps-col-mapping"></div>
+
+        <!-- Missing fields form -->
+        <div id="steps-missing-fields"></div>
+
+        <!-- Preview table -->
+        <div id="steps-preview"></div>
+
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:1.25rem">
+          <button class="btn-download" id="btn-download-steps-csv" onclick="downloadStepsCsv()">
+            ⬇ Descargar CSV para TestRail
+          </button>
+          <div class="loader" id="loader-steps-dl">
+            <div class="spinner"></div> Generando CSV…
           </div>
-          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
         </div>
       </div>
-
-      <div class="form-group">
-        <div class="form-group-label-row">
-          <label>Test Data <span class="hint">(opcional)</span></label>
-          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-tr-data', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
-        </div>
-        <textarea id="tr-testdata" rows="3"
-          placeholder="Usuario: testuser@ejemplo.com&#10;Contraseña válida: Test1234!&#10;Contraseña inválida: wrongpass"></textarea>
-        <div class="code-panel" id="code-tr-data" style="display:none">
-          <div class="code-panel-header">
-            <span class="code-panel-dot" style="background:#ff5f57"></span>
-            <span class="code-panel-dot" style="background:#febc2e"></span>
-            <span class="code-panel-dot" style="background:#28c840"></span>
-            &nbsp;JSON / código de contexto
-          </div>
-          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>Pasos y validaciones <span class="hint">* — Agrega al menos un paso</span></label>
-        <div id="steps-container"></div>
-        <button class="btn-add-step" id="btn-add-step">+ Agregar paso</button>
-      </div>
-
-      <!-- Contexto visual -->
-      <div class="img-context-section">
-        <div class="img-context-label">🖼 Imágenes de contexto <span class="hint">(hasta 3 — mockups, capturas, diagramas…)</span></div>
-        <div class="img-drop-zone" id="tr-img-zone">
-          <input type="file" id="tr-img-input" accept="image/*" multiple style="display:none">
-          📷 Clic o arrastra imágenes aquí
-        </div>
-        <div class="img-preview-row" id="tr-img-previews"></div>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:.5rem;">
-        <button class="btn-primary" id="btn-generate-tr">
-          ✨ Generar casos BDD
-        </button>
-        <div class="loader" id="loader-tr">
-          <div class="spinner"></div>
-          Generando con Gemini…
-        </div>
-      </div>
-      <div class="error-banner" id="error-tr"></div>
     </div>
+
   </div>
 
   <!-- Panel Batch XML -->
-  <div class="panel" id="panel-batch">
-    <div class="card">
-      <div class="card-title">📂 Batch desde XML</div>
-
-      <!-- Upload -->
-      <div class="form-group">
-        <label>Archivo XML <span class="hint">* — Export de Jira (RSS) o formato simple</span></label>
-        <div class="xml-upload-area" id="xml-upload-area">
-          <input type="file" id="xml-file-input" accept=".xml,.rss" />
-          <div class="xml-upload-icon">📁</div>
-          <div class="xml-upload-label">Haz clic o arrastra tu XML aquí</div>
-          <div class="xml-upload-hint">Formato Jira export (RSS) o &lt;cases&gt;&lt;case&gt;...&lt;/case&gt;&lt;/cases&gt;</div>
-          <div class="xml-file-name" id="xml-file-name"></div>
-        </div>
-      </div>
-
-      <!-- Constant config -->
-      <div class="form-group" style="margin-top:1.25rem;">
-        <label>Campos constantes <span class="hint">— se aplican iguales a todos los casos generados</span></label>
-        <div class="config-grid">
-          <div>
-            <label>Type</label>
-            <select id="batch-type">
-              <option>Functional</option>
-              <option>Integration</option>
-              <option>Security</option>
-              <option>Regression</option>
-              <option>Acceptance</option>
-            </select>
-          </div>
-          <div>
-            <label>Priority</label>
-            <select id="batch-priority">
-              <option>1 - Must Test</option>
-              <option selected>2 - Run Before Release</option>
-              <option>3 - Normal</option>
-              <option>4 - Nice to Have</option>
-            </select>
-          </div>
-          <div>
-            <label>Implementation</label>
-            <select id="batch-implementation">
-              <option>Manual</option>
-              <option>Automated</option>
-              <option>Partially Automated</option>
-              <option>Not Applicable</option>
-            </select>
-          </div>
-          <div>
-            <label>Automation Review</label>
-            <select id="batch-automation-review">
-              <option>Not</option>
-              <option>Planned</option>
-              <option>Done</option>
-              <option>In Progress</option>
-            </select>
-          </div>
-          <div class="full-width">
-            <label>Domain <span class="hint">(opcional — ej: CareLogic, Finance…)</span></label>
-            <input type="text" id="batch-domain" placeholder="Dejar vacío si no aplica" />
-          </div>
-        </div>
-        <div class="batch-note">
-          💡 <strong>Implementation</strong>, <strong>Automation Review</strong> y <strong>Domain</strong> se guardan en el CSV como
-          <code>custom_implementation</code>, <code>custom_automation_review</code> y <code>custom_domain</code>.
-          Mapéalos en TestRail al importar.
-        </div>
-      </div>
-
-      <!-- Items table (visible after parse) -->
-      <div class="items-section" id="batch-items-section" style="display:none;">
-        <label>
-          Items detectados
-          <span class="items-count-badge" id="batch-items-count">0</span>
-          <span class="hint">— edita Title, Section y References antes de generar</span>
-        </label>
-        <div class="items-table-wrap">
-          <table class="items-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th style="min-width:260px;">Title</th>
-                <th style="min-width:160px;">Section</th>
-                <th style="min-width:100px;">References</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="batch-items-body"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:1.25rem;">
-        <button class="btn-primary" id="btn-generate-batch" disabled>
-          ✨ Generar todos los casos BDD
-        </button>
-        <div class="loader" id="loader-batch">
-          <div class="spinner"></div>
-          <span id="batch-progress-text">Generando…</span>
-        </div>
-      </div>
-      <div class="error-banner" id="error-batch"></div>
-    </div>
-  </div>
-
   <!-- Panel Editor XML -->
   <div class="panel" id="panel-editor">
     <div class="card">
@@ -1440,72 +1370,6 @@
       <div class="modal-actions">
         <button class="btn-modal-cancel" id="modal-cancel-btn">Cancelar</button>
         <button class="btn-modal-save" id="modal-save-btn">💾 Guardar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Panel Títulos de TC -->
-  <div class="panel" id="panel-titles">
-    <div class="card">
-      <div class="card-title">🏷 Generador de títulos para casos de prueba</div>
-
-      <div class="form-group">
-        <div class="form-group-label-row">
-          <label>Descripción de los casos de prueba <span class="hint">* — escribe los escenarios o funcionalidades a cubrir</span></label>
-          <button class="btn-code-toggle" type="button" onclick="toggleCode('code-titles-main', this)" title="Agregar código o JSON como contexto">&lt;/&gt; código</button>
-        </div>
-        <textarea id="titles-input" rows="8"
-          placeholder="Ejemplos:&#10;- Login con credenciales incorrectas&#10;- Recuperación de contraseña por email&#10;- Acceso con usuario bloqueado&#10;- Cierre de sesión automático por inactividad&#10;&#10;O describe la funcionalidad completa y el modelo generará los títulos necesarios."></textarea>
-        <div class="code-panel" id="code-titles-main" style="display:none">
-          <div class="code-panel-header">
-            <span class="code-panel-dot" style="background:#ff5f57"></span>
-            <span class="code-panel-dot" style="background:#febc2e"></span>
-            <span class="code-panel-dot" style="background:#28c840"></span>
-            &nbsp;JSON / código de contexto
-          </div>
-          <textarea class="code-editor-ta" placeholder='{ "campo": "valor" }  ← pega aquí tu JSON, payload, esquema o fragmento de código'></textarea>
-        </div>
-      </div>
-
-      <!-- Imágenes de contexto -->
-      <div class="img-context-section">
-        <div class="img-context-label">🖼 Imágenes de contexto <span class="hint">(hasta 3 — mockups, capturas, diagramas…)</span></div>
-        <div class="img-drop-zone" id="titles-img-zone">
-          <input type="file" id="titles-img-input" accept="image/*" multiple style="display:none">
-          📷 Clic o arrastra imágenes aquí
-        </div>
-        <div class="img-preview-row" id="titles-img-previews"></div>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
-        <button class="btn-primary" id="btn-generate-titles">
-          🏷 Generar títulos
-        </button>
-        <div class="loader" id="loader-titles">
-          <div class="spinner"></div>
-          Generando con Gemini…
-        </div>
-      </div>
-      <div class="error-banner" id="error-titles"></div>
-    </div>
-
-    <!-- Resultados de títulos -->
-    <div class="card" id="titles-results-section" style="display:none">
-      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem;">
-        <div class="card-title" style="margin-bottom:0">
-          ✅ Títulos generados
-          <span class="badge" id="titles-result-count">0</span>
-        </div>
-      </div>
-
-      <div class="titles-output" id="titles-list"></div>
-
-      <div class="titles-toolbar">
-        <button class="btn-add-title" id="btn-add-title-item">＋ Agregar título</button>
-        <button class="btn-download-xlsx" id="btn-download-titles-xlsx">
-          ⬇ Descargar Excel (.xlsx)
-        </button>
-        <span class="titles-count-badge">Total: <strong id="titles-total-count">0</strong></span>
       </div>
     </div>
   </div>
@@ -1726,7 +1590,6 @@ btnTheme.addEventListener('click', () => {
 // ── Estado global ──────────────────────────────────────────────────────────
 let generatedCases = [];
 let jiraImages = [];   // base64 data-URLs para panel Jira
-let trImages   = [];   // base64 data-URLs para panel TestRail
 
 // ── Botón de código en textareas ──────────────────────────────────────────
 function toggleCode(panelId, btn) {
@@ -1813,7 +1676,6 @@ function fileToBase64(file) {
 }
 
 setupImageZone('jira-img-zone', 'jira-img-input', 'jira-img-previews', jiraImages);
-setupImageZone('tr-img-zone',   'tr-img-input',   'tr-img-previews',   trImages);
 
 // ── Tabs ───────────────────────────────────────────────────────────────────
 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -1825,37 +1687,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-// ── Steps builder (panel TestRail) ────────────────────────────────────────
-let stepCount = 0;
-
-function addStep() {
-  stepCount++;
-  const idx = stepCount;
-  const container = document.getElementById('steps-container');
-  const row = document.createElement('div');
-  row.className = 'step-row';
-  row.dataset.idx = idx;
-  row.innerHTML = `
-    <div class="step-row-num">${idx}</div>
-    <input type="text" placeholder="Paso ${idx}: acción a realizar…" class="step-action" />
-    <input type="text" placeholder="Validación / resultado esperado…" class="step-validation" />
-    <button class="btn-remove-step" title="Eliminar paso" onclick="removeStep(this)">✕</button>
-  `;
-  container.appendChild(row);
-  row.querySelector('.step-action').focus();
-}
-
-function removeStep(btn) {
-  btn.closest('.step-row').remove();
-  // Renumerar
-  document.querySelectorAll('.step-row').forEach((row, i) => {
-    row.querySelector('.step-row-num').textContent = i + 1;
-    row.querySelector('.step-action').placeholder = `Paso ${i+1}: acción a realizar…`;
-  });
-}
-
-document.getElementById('btn-add-step').addEventListener('click', addStep);
-addStep(); // Primer paso por defecto
 
 // ── Helpers UI ────────────────────────────────────────────────────────────
 function setLoading(loaderId, btnId, active) {
@@ -1981,168 +1812,6 @@ document.getElementById('btn-generate-jira').addEventListener('click', async () 
   }
 });
 
-// ── Generar desde TestRail ────────────────────────────────────────────────
-document.getElementById('btn-generate-tr').addEventListener('click', async () => {
-  clearError('error-tr');
-
-  const preconditions = getFieldValue('tr-preconditions', 'code-tr-prec');
-  const test_data     = getFieldValue('tr-testdata',      'code-tr-data');
-  const title_hint    = document.getElementById('tr-title').value.trim();
-
-  const stepRows = document.querySelectorAll('#steps-container .step-row');
-  const steps = [];
-  stepRows.forEach(row => {
-    const step       = row.querySelector('.step-action').value.trim();
-    const validation = row.querySelector('.step-validation').value.trim();
-    if (step) steps.push({ step, validation });
-  });
-
-  if (!document.getElementById('tr-preconditions').value.trim()) { showError('error-tr', 'Las precondiciones son obligatorias.'); return; }
-  if (steps.length === 0) { showError('error-tr', 'Agrega al menos un paso con su acción.'); return; }
-
-  setLoading('loader-tr', 'btn-generate-tr', true);
-
-  try {
-    const res = await authFetch('/api/generate/testrail', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        preconditions,
-        test_data,
-        steps,
-        title_hint,
-        images: trImages,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
-    renderResults(data.test_cases);
-  } catch (e) {
-    showError('error-tr', '⚠ ' + e.message);
-  } finally {
-    setLoading('loader-tr', 'btn-generate-tr', false);
-  }
-});
-
-// ── Batch XML ─────────────────────────────────────────────────────────────────
-const xmlFileInput  = document.getElementById('xml-file-input');
-const xmlUploadArea = document.getElementById('xml-upload-area');
-
-xmlFileInput.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  document.getElementById('xml-file-name').textContent = '📄 ' + file.name;
-  xmlUploadArea.classList.add('has-file');
-  clearError('error-batch');
-
-  const formData = new FormData();
-  formData.append('file', file);
-
-  try {
-    const res = await authFetch('/api/parse-xml', { method: 'POST', body: formData });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error al parsear el XML');
-    renderBatchItems(data.items);
-    document.getElementById('btn-generate-batch').disabled = false;
-  } catch (err) {
-    showError('error-batch', '⚠ ' + err.message);
-    xmlUploadArea.classList.remove('has-file');
-  }
-});
-
-function renderBatchItems(items) {
-  const tbody   = document.getElementById('batch-items-body');
-  const section = document.getElementById('batch-items-section');
-  document.getElementById('batch-items-count').textContent = items.length;
-  tbody.innerHTML = '';
-
-  items.forEach((item, i) => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="row-num">${i + 1}</td>
-      <td><input type="text" value="${escHtml(item.title)}"   class="bi-title"   /></td>
-      <td><input type="text" value="${escHtml(item.section)}" class="bi-section" /></td>
-      <td><input type="text" value="${escHtml(item.refs)}"    class="bi-refs"    /></td>
-      <td><button class="btn-remove-item" title="Eliminar">✕</button></td>
-    `;
-    tr.querySelector('.btn-remove-item').addEventListener('click', () => {
-      tr.remove();
-      // Renumerar
-      document.querySelectorAll('#batch-items-body tr').forEach((r, idx) => {
-        r.querySelector('.row-num').textContent = idx + 1;
-      });
-      document.getElementById('batch-items-count').textContent =
-        document.querySelectorAll('#batch-items-body tr').length;
-    });
-    tbody.appendChild(tr);
-  });
-
-  section.style.display = 'block';
-}
-
-function getBatchItemsFromTable() {
-  return Array.from(document.querySelectorAll('#batch-items-body tr')).map(tr => ({
-    title:       tr.querySelector('.bi-title').value.trim(),
-    section:     tr.querySelector('.bi-section').value.trim(),
-    refs:        tr.querySelector('.bi-refs').value.trim(),
-    description: '',
-  })).filter(item => item.title);
-}
-
-document.getElementById('btn-generate-batch').addEventListener('click', async () => {
-  clearError('error-batch');
-
-  const items = getBatchItemsFromTable();
-  if (!items.length) {
-    showError('error-batch', 'No hay items para generar. Sube un XML primero.');
-    return;
-  }
-
-  const typeOverride     = document.getElementById('batch-type').value;
-  const priorityOverride = document.getElementById('batch-priority').value;
-  const implementation   = document.getElementById('batch-implementation').value;
-  const autoReview       = document.getElementById('batch-automation-review').value;
-  const domain           = document.getElementById('batch-domain').value.trim();
-
-  const extraFields = {};
-  if (implementation) extraFields['custom_implementation']   = implementation;
-  if (autoReview)     extraFields['custom_automation_review'] = autoReview;
-  if (domain)         extraFields['custom_domain']            = domain;
-
-  setLoading('loader-batch', 'btn-generate-batch', true);
-  document.getElementById('batch-progress-text').textContent =
-    `Generando casos para ${items.length} item(s)…`;
-
-  try {
-    const res = await authFetch('/api/generate/batch', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items,
-        type_override:     typeOverride,
-        priority_override: priorityOverride,
-        extra_fields:      extraFields,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.detail || 'Error desconocido');
-
-    if (data.errors && data.errors.length) {
-      const msg = data.errors.map(e => `• ${e.item}: ${e.error}`).join('\n');
-      showError('error-batch', `⚠ Algunos items fallaron:\n${msg}`);
-    }
-
-    document.getElementById('batch-progress-text').textContent =
-      `✅ ${data.count} casos generados de ${items.length} items`;
-
-    renderResults(data.test_cases);
-  } catch (err) {
-    showError('error-batch', '⚠ ' + err.message);
-  } finally {
-    setLoading('loader-batch', 'btn-generate-batch', false);
-  }
-});
 
 // ── Descargar CSV ─────────────────────────────────────────────────────────
 document.getElementById('btn-download').addEventListener('click', async () => {
@@ -2426,20 +2095,14 @@ function setupEditorFileInput() {
 // Inicializar drag & drop y click en la zona de carga
 setupEditorFileInput();
 
-// ══════════════════════════════════════════════════════════════════════════════
-// ── Generador de títulos ──────────────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════════════════════
-
-let titlesImages = [];
-setupImageZone('titles-img-zone', 'titles-img-input', 'titles-img-previews', titlesImages);
+// ── Generador de títulos (inline en panel Jira) ───────────────────────────────
 
 let currentTitles = [];
 
-function renderTitlesList() {
-  const list = document.getElementById('titles-list');
-  const total = document.getElementById('titles-total-count');
+function renderJiraTitles() {
+  const list  = document.getElementById('jira-titles-list');
+  const total = document.getElementById('jira-titles-total');
   list.innerHTML = '';
-
   currentTitles.forEach((title, i) => {
     const row = document.createElement('div');
     row.className = 'title-item';
@@ -2448,62 +2111,65 @@ function renderTitlesList() {
       <input type="text" class="title-input" value="${escHtml(title)}" placeholder="Título del caso de prueba…">
       <button class="btn-remove-title" title="Eliminar">✕</button>
     `;
-    row.querySelector('.title-input').addEventListener('input', e => {
-      currentTitles[i] = e.target.value;
-    });
-    row.querySelector('.btn-remove-title').addEventListener('click', () => {
-      currentTitles.splice(i, 1);
-      renderTitlesList();
-    });
+    row.querySelector('.title-input').addEventListener('input', e => { currentTitles[i] = e.target.value; });
+    row.querySelector('.btn-remove-title').addEventListener('click', () => { currentTitles.splice(i, 1); renderJiraTitles(); });
     list.appendChild(row);
   });
-
   total.textContent = currentTitles.length;
-  document.getElementById('titles-result-count').textContent = currentTitles.length;
+  document.getElementById('jira-titles-count').textContent = currentTitles.length;
 }
 
-document.getElementById('btn-generate-titles').addEventListener('click', async () => {
-  clearError('error-titles');
+document.getElementById('btn-generate-titles-jira').addEventListener('click', async () => {
+  clearError('error-jira');
 
-  const rawInput = document.getElementById('titles-input').value.trim();
-  if (!rawInput) { showError('error-titles', 'Escribe al menos una descripción de caso de prueba.'); return; }
+  const description = getFieldValue('jira-description', 'code-jira-desc');
+  const acceptance  = getFieldValue('jira-acceptance',  'code-jira-acc');
+  const ticket      = document.getElementById('jira-ticket').value.trim();
 
-  const testCases = getFieldValue('titles-input', 'code-titles-main');
+  if (!document.getElementById('jira-description').value.trim()) {
+    showError('error-jira', 'La descripción es obligatoria para generar títulos.');
+    return;
+  }
 
-  setLoading('loader-titles', 'btn-generate-titles', true);
+  const input = [
+    ticket ? `Jira ticket: ${ticket}` : '',
+    `User story:\n${description}`,
+    `Acceptance criteria:\n${acceptance}`,
+  ].filter(Boolean).join('\n\n');
+
+  setLoading('loader-titles-jira', 'btn-generate-titles-jira', true);
 
   try {
     const res = await authFetch('/api/generate/titles', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ test_cases: testCases, images: titlesImages }),
+      body: JSON.stringify({ test_cases: input, images: jiraImages }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.detail || 'Error desconocido del servidor');
 
     currentTitles = data.titles;
-    renderTitlesList();
-    document.getElementById('titles-results-section').style.display = 'block';
-    document.getElementById('titles-results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    renderJiraTitles();
+    const section = document.getElementById('jira-titles-results');
+    section.style.display = 'block';
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   } catch (e) {
-    showError('error-titles', '⚠ ' + e.message);
+    showError('error-jira', '⚠ ' + e.message);
   } finally {
-    setLoading('loader-titles', 'btn-generate-titles', false);
+    setLoading('loader-titles-jira', 'btn-generate-titles-jira', false);
   }
 });
 
-document.getElementById('btn-add-title-item').addEventListener('click', () => {
+document.getElementById('btn-add-jira-title').addEventListener('click', () => {
   currentTitles.push('');
-  renderTitlesList();
-  // Enfocar el último input
-  const inputs = document.querySelectorAll('#titles-list .title-input');
+  renderJiraTitles();
+  const inputs = document.querySelectorAll('#jira-titles-list .title-input');
   if (inputs.length) inputs[inputs.length - 1].focus();
 });
 
-document.getElementById('btn-download-titles-xlsx').addEventListener('click', async () => {
+document.getElementById('btn-download-jira-titles').addEventListener('click', async () => {
   const titles = currentTitles.filter(t => t.trim());
   if (!titles.length) { alert('No hay títulos para descargar.'); return; }
-
   try {
     const res = await authFetch('/api/download/titles-xlsx', {
       method: 'POST',
@@ -2516,10 +2182,167 @@ document.getElementById('btn-download-titles-xlsx').addEventListener('click', as
     const a    = document.createElement('a');
     a.href = url; a.download = 'test_case_titles.xlsx'; a.click();
     URL.revokeObjectURL(url);
-  } catch (e) {
-    alert('Error de red: ' + e.message);
-  }
+  } catch (e) { alert('Error de red: ' + e.message); }
 });
+
+  // ── Steps CSV Converter ──────────────────────────────────────────────────────
+  let stepsFileData = null;
+
+  function showLoader(el) { el.classList.add('visible'); }
+  function hideLoader(el) { el.classList.remove('visible'); }
+  function showErrorEl(el, msg) { el.textContent = msg; el.classList.add('visible'); }
+
+  (function initStepsConverter() {
+    const area  = document.getElementById('steps-upload-area');
+    const input = document.getElementById('steps-file-input');
+
+    area.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      if (input.files[0]) handleStepsFile(input.files[0]);
+    });
+    area.addEventListener('dragover', e => { e.preventDefault(); area.style.borderColor = 'var(--accent)'; });
+    area.addEventListener('dragleave', () => { area.style.borderColor = ''; });
+    area.addEventListener('drop', e => {
+      e.preventDefault(); area.style.borderColor = '';
+      if (e.dataTransfer.files[0]) handleStepsFile(e.dataTransfer.files[0]);
+    });
+  })();
+
+  async function handleStepsFile(file) {
+    const loader = document.getElementById('loader-steps-parse');
+    const errBanner = document.getElementById('error-steps');
+    const results = document.getElementById('steps-results');
+    const fname = document.getElementById('steps-file-name');
+
+    fname.textContent = file.name;
+    document.getElementById('steps-upload-area').classList.add('has-file');
+    showLoader(loader);
+    results.style.display = 'none';
+    errBanner.style.display = 'none';
+    errBanner.classList.remove('visible');
+
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await fetch('/api/parse-stepbystep', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + (sessionToken || '') },
+        body: fd,
+      });
+      if (!res.ok) { const e = await res.json(); showErrorEl(errBanner, e.detail || 'Error al parsear'); return; }
+      const data = await res.json();
+      stepsFileData = data;
+      renderStepsResults(data);
+      results.style.display = 'block';
+    } catch(e) {
+      showErrorEl(errBanner, 'Error de conexión con el servidor');
+    } finally {
+      hideLoader(loader);
+    }
+  }
+
+  function renderStepsResults(data) {
+    // Summary
+    document.getElementById('steps-summary').innerHTML =
+      `<strong>${data.total_rows} filas</strong> detectadas en <strong>${data.filename}</strong>. ` +
+      (data.has_steps
+        ? '✓ Columna de pasos detectada.'
+        : '<span style="color:#b45309">⚠ No se detectó columna de pasos — los casos se generarán sin steps.</span>');
+
+    // Column mapping table
+    const mappingFields = [
+      { field: 'title',          label: 'Title',                   required: true },
+      { field: 'steps_step',     label: 'Steps (Step)',            required: false },
+      { field: 'steps_expected', label: 'Steps (Expected Result)', required: false },
+      { field: 'priority',       label: 'Priority',                required: true },
+      { field: 'type',           label: 'Type',                    required: false },
+      { field: 'refs',           label: 'References',              required: false },
+      { field: 'preconditions',  label: 'Preconditions',           required: false },
+      { field: 'description',    label: 'Description',             required: false },
+    ];
+    let html = '<div class="steps-section-title">Columnas detectadas</div>';
+    html += '<div class="items-table-wrap"><table class="col-map-table"><thead><tr><th>Campo TestRail</th><th>Columna en tu archivo</th></tr></thead><tbody>';
+    for (const f of mappingFields) {
+      const detected = data.col_map[f.field];
+      html += `<tr><td>${f.label}${f.required ? ' <span class="col-required-star">*</span>' : ''}</td>`;
+      html += detected
+        ? `<td><span class="col-detected">${detected}</span> ✓</td>`
+        : `<td><span class="col-missing">No detectado${f.required ? ' — valor global requerido ↓' : ''}</span></td>`;
+      html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    document.getElementById('steps-col-mapping').innerHTML = html;
+
+    // Missing fields form
+    const missingFields = (data.missing || []);
+    let mhtml = '';
+    if (missingFields.length > 0) {
+      mhtml += '<div class="steps-section-title">Campos no detectados — completa los valores globales</div>';
+      mhtml += '<div class="missing-fields-grid">';
+      for (const m of missingFields) {
+        mhtml += `<div><label>${m.label}${m.required ? ' <span class="col-required-star">*</span>' : ''}</label>`;
+        if (m.input_type === 'select') {
+          mhtml += `<select class="steps-missing-field" data-field="${m.field}">`;
+          for (const opt of m.options) {
+            mhtml += `<option value="${opt}"${opt === m.default ? ' selected' : ''}>${opt}</option>`;
+          }
+          mhtml += '</select>';
+        } else {
+          mhtml += `<input type="text" class="steps-missing-field" data-field="${m.field}" value="${m.default || ''}" placeholder="${m.placeholder || ''}">`;
+        }
+        mhtml += '</div>';
+      }
+      mhtml += '</div>';
+    }
+    document.getElementById('steps-missing-fields').innerHTML = mhtml;
+
+    // Preview
+    if (data.preview && data.preview.length > 0) {
+      const cols = data.headers.slice(0, 7);
+      let phtml = '<div class="steps-section-title" style="margin-top:.9rem">Vista previa (primeras 5 filas)</div>';
+      phtml += '<div class="items-table-wrap"><table class="items-table"><thead><tr>';
+      cols.forEach(c => { phtml += `<th>${c}</th>`; });
+      phtml += '</tr></thead><tbody>';
+      data.preview.forEach(row => {
+        phtml += '<tr>';
+        cols.forEach(c => {
+          const v = row[c] || '';
+          phtml += `<td title="${v.replace(/"/g,'&quot;')}">${v.length > 45 ? v.slice(0,45)+'…' : v}</td>`;
+        });
+        phtml += '</tr>';
+      });
+      phtml += '</tbody></table></div>';
+      document.getElementById('steps-preview').innerHTML = phtml;
+    }
+  }
+
+  async function downloadStepsCsv() {
+    if (!stepsFileData) return;
+    const defaults = {};
+    document.querySelectorAll('.steps-missing-field').forEach(el => {
+      defaults[el.dataset.field] = el.value;
+    });
+    const loader = document.getElementById('loader-steps-dl');
+    const errBanner = document.getElementById('error-steps');
+    showLoader(loader);
+    try {
+      const res = await fetch('/api/download/steps-csv', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (sessionToken || '') },
+        body: JSON.stringify({ rows: stepsFileData.rows, col_map: stepsFileData.col_map, defaults }),
+      });
+      if (!res.ok) { const e = await res.json(); showErrorEl(errBanner, e.detail || 'Error al generar CSV'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'testrail_import.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) {
+      showErrorEl(errBanner, 'Error de conexión con el servidor');
+    } finally {
+      hideLoader(loader);
+    }
+  }
 </script>
 </body>
 </html>
